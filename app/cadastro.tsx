@@ -49,8 +49,11 @@ export default function Cadastro() {
       Alert.alert("Sucesso!", "Conta criada com sucesso!", [
         { text: "Entrar", onPress: () => router.replace("/home") },
       ]);
-    } catch (e) {
-      Alert.alert("Erro", "Não foi possível criar a conta. Tente novamente.");
+      } catch (e: any) {
+      Alert.alert(
+        "Erro detalhado",
+        `Status: ${e?.response?.status}\nMsg: ${e?.message}\nData: ${JSON.stringify(e?.response?.data)}`
+      );
     } finally {
       setCarregando(false);
     }

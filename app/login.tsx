@@ -29,7 +29,7 @@ export default function Login() {
 
   async function handleEntrar() {
     if (!emailOrUser.trim() || !senha.trim()) {
-      Alert.alert("Atenção", "Preencha usuário/e-mail e senha.");
+      Alert.alert("Atenção", "Preencha com e-mail e senha.");
       return;
     }
     try {
@@ -68,11 +68,11 @@ export default function Login() {
 
           
             <View style={estilos.campoWrapper}>
-              <Text style={estilos.label}>Usuário ou Email</Text>
+              <Text style={estilos.label}>Email</Text>
               <View style={estilos.inputContainer}>
                 <TextInput
                   style={estilos.input}
-                  placeholder="Digite seu usuário ou e-mail"
+                  placeholder="Digite seu e-mail"
                   placeholderTextColor="#888"
                   value={emailOrUser}
                   onChangeText={setEmailOrUser}

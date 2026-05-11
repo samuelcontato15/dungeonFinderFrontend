@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import api from "@/services/api";
 
 interface User {
   id: string;
@@ -37,24 +38,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  async function signIn(emailOrUser: string, _senha: string) {
-    const mockUser: User = {
-      id: "1",
+   async function signIn(emailOrUser: string, senha: string) {
+    const response = await api.post<string>("/auth/login", {
+      email: emailOrUser,
+      senha,
+    });
+
+    const token = response.data;
+
+    const loggedUser: User = {
+      id: "",
       usuario: emailOrUser.includes("@") ? emailOrUser.split("@")[0] : emailOrUser,
-      email: emailOrUser.includes("@") ? emailOrUser : `${emailOrUser}@dungeon.com`,
+      email: emailOrUser,
     };
-    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(mockUser));
-    setUser(mockUser);
+
+    await AsyncStorage.setItem("@DungeonFinder:token", token);
+    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(loggedUser));
+    setUser(loggedUser);
   }
 
-  async function signUp(usuario: string, email: string, _senha: string) {
-    const mockUser: User = { id: Date.now().toString(), usuario, email };
-    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(mockUser));
-    setUser(mockUser);
-  }
+ async function signUp(usuario: string, email: string, senha: string) {
+  try {
+    const response = await api.post<string>("/auth/register", {
+      nick: usuario,
+      email,
+      senha,
+    });
 
+    const token = response.data;
+    const newUser: User = { id: "", usuario, email };
+
+    await AsyncStorage.setItem("@DungeonFinder:token", token);
+    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(newUser));
+    setUser(newUser);
+  } catch (e: any) {
+    console.log("STATUS:", e?.response?.status);
+    console.log("DATA:", JSON.stringify(e?.response?.data));
+    console.log("MESSAGE:", e?.message);
+    throw e;
+  }
+}
   async function signOut() {
-    await AsyncStorage.removeItem("@DungeonFinder:user");
+    await AsyncStorage.multiRemove(["@DungeonFinder:token", "@DungeonFinder:user"]);
     setUser(null);
   }
 
