@@ -38,7 +38,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-   async function signIn(emailOrUser: string, senha: string) {
+  // Busca o ID real do usuário pelo nick após login
+  async function buscarIdPorNick(nick: string): Promise<string> {
+    try {
+      const response = await api.get<{ id: string; nick: string }[]>("/usuarios");
+      const encontrado = response.data.find(
+        (u) => u.nick.toLowerCase() === nick.toLowerCase()
+      );
+      return encontrado?.id ?? "";
+    } catch {
+      return "";
+    }
+  }
+
+  async function signIn(emailOrUser: string, senha: string) {
     const response = await api.post<string>("/auth/login", {
       email: emailOrUser,
       senha,
@@ -46,38 +59,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const token = response.data;
 
-    const loggedUser: User = {
-      id: "",
-      usuario: emailOrUser.includes("@") ? emailOrUser.split("@")[0] : emailOrUser,
-      email: emailOrUser,
-    };
+    // Determina o nick a partir do email ou usuário digitado
+    const nick = emailOrUser.includes("@")
+      ? emailOrUser.split("@")[0]
+      : emailOrUser;
 
+    // Salva token primeiro para que as próximas chamadas já usem ele
     await AsyncStorage.setItem("@DungeonFinder:token", token);
+
+    // Busca o ID real no backend
+    const id = await buscarIdPorNick(nick);
+
+    const loggedUser: User = { id, usuario: nick, email: emailOrUser };
+
     await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(loggedUser));
     setUser(loggedUser);
   }
 
- async function signUp(usuario: string, email: string, senha: string) {
-  try {
-    const response = await api.post<string>("/auth/register", {
-      nick: usuario,
-      email,
-      senha,
-    });
+  async function signUp(usuario: string, email: string, senha: string) {
+    try {
+      const response = await api.post<string>("/auth/register", {
+        nick: usuario,
+        email,
+        senha,
+      });
 
-    const token = response.data;
-    const newUser: User = { id: "", usuario, email };
+      const token = response.data;
+      await AsyncStorage.setItem("@DungeonFinder:token", token);
 
-    await AsyncStorage.setItem("@DungeonFinder:token", token);
-    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(newUser));
-    setUser(newUser);
-  } catch (e: any) {
-    console.log("STATUS:", e?.response?.status);
-    console.log("DATA:", JSON.stringify(e?.response?.data));
-    console.log("MESSAGE:", e?.message);
-    throw e;
+      // Busca o ID real no backend
+      const id = await buscarIdPorNick(usuario);
+
+      const newUser: User = { id, usuario, email };
+      await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(newUser));
+      setUser(newUser);
+    } catch (e: any) {
+      console.log("STATUS:", e?.response?.status);
+      console.log("DATA:", JSON.stringify(e?.response?.data));
+      console.log("MESSAGE:", e?.message);
+      throw e;
+    }
   }
-}
+
   async function signOut() {
     await AsyncStorage.multiRemove(["@DungeonFinder:token", "@DungeonFinder:user"]);
     setUser(null);

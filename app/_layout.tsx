@@ -19,6 +19,7 @@ export default function RootLayout() {
           <Stack.Screen name="perfil"         />
           <Stack.Screen name="config"         />
           <Stack.Screen name="guilda"         />
+          <Stack.Screen name="amigos"         />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>
