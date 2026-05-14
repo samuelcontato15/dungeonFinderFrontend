@@ -38,18 +38,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  // Busca o ID real do usuário pelo nick após login
-  async function buscarIdPorNick(nick: string): Promise<string> {
-    try {
-      const response = await api.get<{ id: string; nick: string }[]>("/usuarios");
-      const encontrado = response.data.find(
-        (u) => u.nick.toLowerCase() === nick.toLowerCase()
-      );
-      return encontrado?.id ?? "";
-    } catch {
-      return "";
+  
+ async function buscarIdPorNick(identificador: string): Promise<string> {
+  try {
+  
+    const response = await api.get<any[]>("/usuarios");
+    
+    const encontrado = response.data.find(
+      (u) => 
+        u.nick?.toLowerCase() === identificador.toLowerCase() ||
+        u.email?.toLowerCase() === identificador.toLowerCase()
+    );
+
+    if (encontrado) {
+      return encontrado.id;
     }
+
+   
+
+    return "";
+  } catch (err) {
+    return "";
   }
+}
 
   async function signIn(emailOrUser: string, senha: string) {
     const response = await api.post<string>("/auth/login", {
