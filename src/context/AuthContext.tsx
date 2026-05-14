@@ -1,11 +1,14 @@
+import api from "@/services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
-import api from "@/services/api";
 
 interface User {
   id: string;
   usuario: string;
   email: string;
+  bio?: string;
+  fotoPerfil?: string | null;
+  isAdmin?: boolean;
 }
 
 interface AuthContextData {
@@ -15,6 +18,7 @@ interface AuthContextData {
   signUp: (usuario: string, email: string, senha: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
+  updateUser: (updatedData: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -27,10 +31,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadStoredUser();
   }, []);
 
+  // Busca dados completos do usuário no backend pelo ID
+  async function fetchFullUser(id: string): Promise<User | null> {
+    try {
+      const response = await api.get(`/usuarios/${id}`);
+      const data = response.data;
+      return {
+        id: data.id,
+        usuario: data.nick,
+        email: data.email,
+        bio: data.bio,
+        fotoPerfil: data.fotoPerfil,
+        isAdmin: data.isAdmin,
+      };
+    } catch (error) {
+      console.error("Erro ao buscar dados completos do usuário:", error);
+      return null;
+    }
+  }
+
   async function loadStoredUser() {
     try {
       const storedUser = await AsyncStorage.getItem("@DungeonFinder:user");
-      if (storedUser) setUser(JSON.parse(storedUser));
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        // Se temos ID, buscar dados atualizados do backend
+        if (parsedUser.id) {
+          const fullUser = await fetchFullUser(parsedUser.id);
+          if (fullUser) {
+            setUser(fullUser);
+            // Atualizar storage com dados completos
+            await AsyncStorage.setItem(
+              "@DungeonFinder:user",
+              JSON.stringify(fullUser),
+            );
+          } else {
+            setUser(parsedUser);
+          }
+        } else {
+          setUser(parsedUser);
+        }
+      }
     } catch (e) {
       console.error("Erro ao carregar usuário:", e);
     } finally {
@@ -41,9 +82,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Busca o ID real do usuário pelo nick após login
   async function buscarIdPorNick(nick: string): Promise<string> {
     try {
-      const response = await api.get<{ id: string; nick: string }[]>("/usuarios");
+      const response =
+        await api.get<{ id: string; nick: string }[]>("/usuarios");
       const encontrado = response.data.find(
-        (u) => u.nick.toLowerCase() === nick.toLowerCase()
+        (u) => u.nick.toLowerCase() === nick.toLowerCase(),
       );
       return encontrado?.id ?? "";
     } catch {
@@ -70,10 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Busca o ID real no backend
     const id = await buscarIdPorNick(nick);
 
-    const loggedUser: User = { id, usuario: nick, email: emailOrUser };
+    // Busca dados completos do usuário
+    const fullUser = await fetchFullUser(id);
 
-    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(loggedUser));
-    setUser(loggedUser);
+    if (!fullUser) {
+      throw new Error("Usuário não encontrado no backend");
+    }
+
+    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(fullUser));
+    setUser(fullUser);
   }
 
   async function signUp(usuario: string, email: string, senha: string) {
@@ -90,9 +137,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Busca o ID real no backend
       const id = await buscarIdPorNick(usuario);
 
-      const newUser: User = { id, usuario, email };
-      await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(newUser));
-      setUser(newUser);
+      // Busca dados completos do usuário
+      const fullUser = await fetchFullUser(id);
+
+      if (!fullUser) {
+        throw new Error("Usuário não encontrado após cadastro");
+      }
+
+      await AsyncStorage.setItem(
+        "@DungeonFinder:user",
+        JSON.stringify(fullUser),
+      );
+      setUser(fullUser);
     } catch (e: any) {
       console.log("STATUS:", e?.response?.status);
       console.log("DATA:", JSON.stringify(e?.response?.data));
@@ -102,13 +158,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
-    await AsyncStorage.multiRemove(["@DungeonFinder:token", "@DungeonFinder:user"]);
+    await AsyncStorage.multiRemove([
+      "@DungeonFinder:token",
+      "@DungeonFinder:user",
+    ]);
     setUser(null);
+  }
+
+  // Função para atualizar os dados do usuário localmente e no storage
+  async function updateUser(updatedData: Partial<User>) {
+    if (!user) return;
+
+    const updatedUser = { ...user, ...updatedData };
+    setUser(updatedUser);
+    await AsyncStorage.setItem(
+      "@DungeonFinder:user",
+      JSON.stringify(updatedUser),
+    );
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, signIn, signUp, signOut, isAuthenticated: !!user }}
+      value={{
+        user,
+        isLoading,
+        signIn,
+        signUp,
+        signOut,
+        isAuthenticated: !!user,
+        updateUser,
+      }}
     >
       {children}
     </AuthContext.Provider>
