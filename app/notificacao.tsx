@@ -1,15 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ImageBackground, ScrollView, TouchableOpacity, Image, StatusBar, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  StatusBar,
+  Alert,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { useRouter } from "expo-router";
+import BarraNavegacao from "@/components/BarraNavegacao";
 
 export default function Notificacoes() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
+
   const [solicitacoes, setSolicitacoes] = useState<any[]>([]);
 
   useEffect(() => {
@@ -18,14 +30,18 @@ export default function Notificacoes() {
 
   const carregarSolicitacoes = async () => {
     try {
-      const res = await api.get(`/amizades/usuario/${user?.id}/pendentes`);
+      const res = await api.get(
+        `/amizades/usuario/${user?.id}/pendentes`
+      );
 
       const apenasRecebidas = res.data.filter((amz: any) => {
-        const idDestinatario = amz.destinatario?.id || amz.destinatarioId;
+        const idDestinatario =
+          amz.destinatario?.id || amz.destinatarioId;
 
         const isParaMim = idDestinatario === user?.id;
 
-        const isPendente = amz.status?.toUpperCase() === "PENDENTE";
+        const isPendente =
+          amz.status?.toUpperCase() === "PENDENTE";
 
         return isParaMim && isPendente;
       });
@@ -40,13 +56,18 @@ export default function Notificacoes() {
         console.log("Detalhes:", JSON.stringify(err.response.data));
       }
 
-      Alert.alert("Erro", "Não foi possível carregar as notificações.");
+      Alert.alert(
+        "Erro",
+        "Não foi possível carregar as notificações."
+      );
     }
   };
 
   const aceitarAmizade = async (amizadeId: string) => {
     try {
-      await api.put(`/amizades/${amizadeId}/aceitar?usuarioId=${user?.id}`);
+      await api.put(
+        `/amizades/${amizadeId}/aceitar?usuarioId=${user?.id}`
+      );
 
       Alert.alert("Sucesso", "Convite aceito!");
 
@@ -54,7 +75,11 @@ export default function Notificacoes() {
 
     } catch (err) {
       console.log("Erro ao aceitar:", err);
-      Alert.alert("Erro", "Não foi possível aceitar o convite.");
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível aceitar o convite."
+      );
     }
   };
 
@@ -68,21 +93,40 @@ export default function Notificacoes() {
 
     } catch (err) {
       console.log("Erro ao recusar:", err);
-      Alert.alert("Erro", "Erro ao processar a ação.");
+
+      Alert.alert(
+        "Erro",
+        "Erro ao processar a ação."
+      );
     }
   };
 
   return (
-    <ImageBackground source={require("../assets/fundoperfil.png")} style={estilos.fundo}>
+    <ImageBackground
+      source={require("../assets/fundo1.png")}
+      style={estilos.fundo}
+    >
       <View style={estilos.overlay} />
+
       <StatusBar barStyle="light-content" />
 
-      <View style={[estilos.header, { paddingTop: insets.top + 10 }]}>
+      <View
+        style={[
+          estilos.header,
+          { paddingTop: insets.top + 10 },
+        ]}
+      >
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
+          <Ionicons
+            name="arrow-back"
+            size={24}
+            color="#E8D5A3"
+          />
         </TouchableOpacity>
 
-        <Text style={estilos.headerTitulo}>NOTIFICAÇÕES</Text>
+        <Text style={estilos.headerTitulo}>
+          NOTIFICAÇÕES
+        </Text>
 
         <View style={{ width: 24 }} />
       </View>
@@ -90,13 +134,25 @@ export default function Notificacoes() {
       <ScrollView contentContainerStyle={estilos.container}>
         {solicitacoes.length > 0 ? (
           solicitacoes.map((item) => (
-            <View key={item.id} style={estilos.cardNotificacao}>
+            <View
+              key={item.id}
+              style={estilos.cardNotificacao}
+            >
               <View style={estilos.infoUsuario}>
                 <View style={estilos.avatar}>
                   {item.solicitante?.fotoPerfil ? (
-                    <Image source={{ uri: item.solicitante.fotoPerfil }} style={estilos.imgAvatar} />
+                    <Image
+                      source={{
+                        uri: item.solicitante.fotoPerfil,
+                      }}
+                      style={estilos.imgAvatar}
+                    />
                   ) : (
-                    <Ionicons name="person" size={24} color="#FFF" />
+                    <Ionicons
+                      name="person"
+                      size={24}
+                      color="#FFF"
+                    />
                   )}
                 </View>
 
@@ -116,14 +172,22 @@ export default function Notificacoes() {
                   style={estilos.btnAceitar}
                   onPress={() => aceitarAmizade(item.id)}
                 >
-                  <Ionicons name="checkmark" size={20} color="#000" />
+                  <Ionicons
+                    name="checkmark"
+                    size={20}
+                    color="#000"
+                  />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={estilos.btnRecusar}
                   onPress={() => recusarAmizade(item.id)}
                 >
-                  <Ionicons name="close" size={20} color="#FFF" />
+                  <Ionicons
+                    name="close"
+                    size={20}
+                    color="#FFF"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -134,30 +198,41 @@ export default function Notificacoes() {
           </Text>
         )}
       </ScrollView>
+
+      <View style={estilos.footer}>
+        <BarraNavegacao />
+      </View>
     </ImageBackground>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.92)" },
+  fundo: {
+    flex: 1,
+  },
+
+overlay: {
+  ...StyleSheet.absoluteFillObject,
+  backgroundColor: "rgba(0,0,0,0.55)",
+},
 
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    marginBottom: 20
+    marginBottom: 20,
   },
 
   headerTitulo: {
     color: "#E8D5A3",
     fontSize: 18,
-    fontWeight: "bold"
+    fontWeight: "bold",
   },
 
   container: {
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
+    paddingBottom: 120,
   },
 
   cardNotificacao: {
@@ -169,13 +244,13 @@ const estilos = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#333"
+    borderColor: "#333",
   },
 
   infoUsuario: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12
+    gap: 12,
   },
 
   avatar: {
@@ -187,46 +262,53 @@ const estilos = StyleSheet.create({
     alignItems: "center",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E8D5A3"
+    borderColor: "#E8D5A3",
   },
 
   imgAvatar: {
     width: "100%",
-    height: "100%"
+    height: "100%",
   },
 
   nick: {
     color: "#FFF",
     fontWeight: "bold",
-    fontSize: 16
+    fontSize: 16,
   },
 
   subtitulo: {
     color: "#999",
-    fontSize: 12
+    fontSize: 12,
   },
 
   acoes: {
     flexDirection: "row",
-    gap: 10
+    gap: 10,
   },
 
   btnAceitar: {
     backgroundColor: "#E8D5A3",
     padding: 8,
-    borderRadius: 20
+    borderRadius: 20,
   },
 
   btnRecusar: {
     backgroundColor: "#444",
     padding: 8,
-    borderRadius: 20
+    borderRadius: 20,
   },
 
   msgVazia: {
     color: "#666",
     textAlign: "center",
     marginTop: 50,
-    fontStyle: "italic"
-  }
+    fontStyle: "italic",
+  },
+
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
 });

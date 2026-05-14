@@ -40,35 +40,41 @@ export default function Perfil() {
   const [editandoFavoritos, setEditandoFavoritos] = useState(false);
 
   useEffect(() => {
-    if (user?.id) {
-      api
-        .get(`/amizades/usuario/${user.id}`)
-        .then((res) => {
-          const listaFormatada = res.data.map((amz: any) =>
-            amz.solicitante.id === user.id ? amz.destinatario : amz.solicitante,
-          );
-          setAmigos(listaFormatada);
-        })
-        .catch((err) => console.log("Erro amigos:", err));
-
-      api
-        .get(`/usuarios/${user.id}`)
-        .then((res) => {
-          const userData = res.data;
-          setBio(userData.bio || "Olá, esse é meu perfil.");
-          setFoto(userData.fotoPerfil || null);
-
-          if (userData.favoritos) {
-            try {
-              setFavoritos(JSON.parse(userData.favoritos));
-            } catch (e) {
-              setFavoritos([]);
-            }
-          }
-        })
-        .catch((err) => console.log("Erro carregar perfil:", err));
-    }
+    carregarPerfil();
   }, [user]);
+
+  const carregarPerfil = async () => {
+    if (!user?.id) return;
+
+    try {
+      const amigosResponse = await api.get(`/amizades/usuario/${user.id}`);
+
+      const listaFormatada = amigosResponse.data.map((amz: any) =>
+        amz.solicitante.id === user.id
+          ? amz.destinatario
+          : amz.solicitante,
+      );
+
+      setAmigos(listaFormatada);
+
+      const perfilResponse = await api.get(`/usuarios/${user.id}`);
+
+      const userData = perfilResponse.data;
+
+      setBio(userData.bio || "Olá, esse é meu perfil.");
+      setFoto(userData.fotoPerfil || null);
+
+      if (userData.favoritos) {
+        try {
+          setFavoritos(JSON.parse(userData.favoritos));
+        } catch {
+          setFavoritos([]);
+        }
+      }
+    } catch (err) {
+      console.log("Erro carregar perfil:", err);
+    }
+  };
 
   const toggleFavorito = (id: string) => {
     if (favoritos.includes(id)) {
@@ -80,7 +86,11 @@ export default function Perfil() {
 
   const escolherImagem = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Permissão necessária");
+
+    if (!perm.granted) {
+      Alert.alert("Permissão necessária");
+      return;
+    }
 
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
@@ -97,7 +107,9 @@ export default function Perfil() {
     }
   };
 
-  const removerImagem = () => setFoto(null);
+  const removerImagem = () => {
+    setFoto(null);
+  };
 
   const salvarPerfil = async () => {
     if (!user?.id) {
@@ -116,7 +128,10 @@ export default function Perfil() {
         corAvatar: corAvatar,
       };
 
-      const response = await api.put(`/usuarios/${user.id}`, dadosAtualizados);
+      const response = await api.put(
+        `/usuarios/${user.id}`,
+        dadosAtualizados,
+      );
 
       if (response.status === 200) {
         if (updateUser) {
@@ -127,12 +142,16 @@ export default function Perfil() {
           });
         }
 
+        await carregarPerfil();
+
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
+
         setEditandoBio(false);
         setEditandoFavoritos(false);
       }
     } catch (error: any) {
       console.error("Erro ao salvar:", error);
+
       Alert.alert(
         "Erro",
         error.response?.data?.message ||
@@ -143,7 +162,6 @@ export default function Perfil() {
     }
   };
 
-  // Verificar se há alterações pendentes
   const temAlteracoes = () => {
     return editandoBio || editandoFavoritos;
   };
@@ -159,6 +177,7 @@ export default function Perfil() {
       style={estilos.fundo}
     >
       <View style={estilos.overlay} />
+
       <StatusBar barStyle="light-content" />
 
       <ScrollView
@@ -168,7 +187,6 @@ export default function Perfil() {
           paddingHorizontal: 20,
         }}
       >
-        {/* Header com botões de Config e Logout */}
         <View style={estilos.header}>
           <TouchableOpacity
             style={estilos.botao}
@@ -177,12 +195,14 @@ export default function Perfil() {
             <Text style={estilos.botaoTxt}>Configurações</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={estilos.botao} onPress={handleLogout}>
+          <TouchableOpacity
+            style={estilos.botao}
+            onPress={handleLogout}
+          >
             <Text style={estilos.botaoTxt}>Log-out</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Botão Salvar (aparece apenas quando há edição ativa) */}
         {temAlteracoes() && (
           <TouchableOpacity
             style={estilos.botaoSalvar}
@@ -193,7 +213,12 @@ export default function Perfil() {
               <ActivityIndicator color="#FFF" size="small" />
             ) : (
               <>
-                <Ionicons name="save-outline" size={20} color="#FFF" />
+                <Ionicons
+                  name="save-outline"
+                  size={20}
+                  color="#FFF"
+                />
+
                 <Text style={estilos.botaoSalvarTxt}>
                   Salvar todas as alterações
                 </Text>
@@ -202,13 +227,15 @@ export default function Perfil() {
           </TouchableOpacity>
         )}
 
-        {/* Perfil */}
         <View style={estilos.perfil}>
           <View style={{ alignItems: "center" }}>
             <View style={{ position: "relative" }}>
               <TouchableOpacity onPress={escolherImagem}>
                 {foto ? (
-                  <Image source={{ uri: foto }} style={estilos.avatar} />
+                  <Image
+                    source={{ uri: foto }}
+                    style={estilos.avatar}
+                  />
                 ) : (
                   <View
                     style={[
@@ -220,19 +247,38 @@ export default function Perfil() {
                       },
                     ]}
                   >
-                    <Ionicons name="person" size={40} color="#FFF" />
+                    <Ionicons
+                      name="person"
+                      size={40}
+                      color="#FFF"
+                    />
                   </View>
                 )}
               </TouchableOpacity>
-              <TouchableOpacity style={estilos.lapis} onPress={escolherImagem}>
-                <Ionicons name="pencil" size={14} color="#000" />
+
+              <TouchableOpacity
+                style={estilos.lapis}
+                onPress={escolherImagem}
+              >
+                <Ionicons
+                  name="pencil"
+                  size={14}
+                  color="#000"
+                />
               </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: "row", gap: 10, marginTop: 5 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                gap: 10,
+                marginTop: 5,
+              }}
+            >
               <TouchableOpacity onPress={escolherImagem}>
                 <Text style={estilos.btnMini}>Upload</Text>
               </TouchableOpacity>
+
               {foto && (
                 <TouchableOpacity onPress={removerImagem}>
                   <Text style={estilos.btnMini}>Remover</Text>
@@ -240,7 +286,12 @@ export default function Perfil() {
               )}
             </View>
 
-            <View style={{ flexDirection: "row", marginTop: 8 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                marginTop: 8,
+              }}
+            >
               {cores.map((c) => (
                 <TouchableOpacity
                   key={c}
@@ -248,7 +299,10 @@ export default function Perfil() {
                   style={[
                     estilos.cor,
                     { backgroundColor: c },
-                    corAvatar === c && { borderWidth: 2, borderColor: "#FFF" },
+                    corAvatar === c && {
+                      borderWidth: 2,
+                      borderColor: "#FFF",
+                    },
                   ]}
                 />
               ))}
@@ -263,8 +317,17 @@ export default function Perfil() {
             <View style={estilos.bioBox}>
               <View style={estilos.bioHeader}>
                 <Text style={estilos.bioTitulo}>Bio</Text>
-                <TouchableOpacity onPress={() => setEditandoBio(!editandoBio)}>
-                  <Ionicons name="pencil" size={16} color="#000" />
+
+                <TouchableOpacity
+                  onPress={() =>
+                    setEditandoBio(!editandoBio)
+                  }
+                >
+                  <Ionicons
+                    name="pencil"
+                    size={16}
+                    color="#000"
+                  />
                 </TouchableOpacity>
               </View>
 
@@ -278,6 +341,7 @@ export default function Perfil() {
                     placeholder="Escreva sua bio aqui..."
                     maxLength={500}
                   />
+
                   <Text style={estilos.contadorCaracteres}>
                     {bio.length}/500
                   </Text>
@@ -288,95 +352,6 @@ export default function Perfil() {
             </View>
           </View>
         </View>
-
-        {/* Amigos */}
-        <View style={estilos.headerAmigos}>
-          <Text style={estilos.titulo}>AMIGOS</Text>
-          <TouchableOpacity
-            style={estilos.botaoMais}
-            onPress={() => router.push("/amigos")}
-          >
-            <Ionicons name="add" size={20} color="#000" />
-          </TouchableOpacity>
-        </View>
-
-        {amigos.length > 0 ? (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginBottom: 20 }}
-          >
-            {amigos.map((amigo) => (
-              <View key={amigo.id} style={estilos.itemAmigo}>
-                <View style={estilos.avatarAmigo}>
-                  {amigo.fotoPerfil ? (
-                    <Image
-                      source={{ uri: amigo.fotoPerfil }}
-                      style={{ width: "100%", height: "100%" }}
-                    />
-                  ) : (
-                    <Ionicons name="person" size={20} color="#FFF" />
-                  )}
-                </View>
-                <Text style={estilos.nomeAmigo} numberOfLines={1}>
-                  {amigo.nick}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-        ) : (
-          <Text style={estilos.msgVazia}>Nenhum amigo encontrado.</Text>
-        )}
-
-        {/* RPG's Favoritos */}
-        <Text style={[estilos.titulo, { marginTop: 10 }]}>RPG'S FAVORITOS</Text>
-        <View style={estilos.favoritos}>
-          {favoritos.map((id) => {
-            const jogo = dadosJogos.find((j) => j.id === id);
-            return jogo ? (
-              <View key={id} style={{ position: "relative" }}>
-                <Image source={jogo.fonte} style={estilos.img} />
-                {editandoFavoritos && (
-                  <TouchableOpacity
-                    style={estilos.remover}
-                    onPress={() => toggleFavorito(id)}
-                  >
-                    <Ionicons name="close" size={14} color="#FFF" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ) : null;
-          })}
-        </View>
-
-        <TouchableOpacity
-          onPress={() => setEditandoFavoritos(!editandoFavoritos)}
-        >
-          <Text style={estilos.editar}>
-            {editandoFavoritos ? "Fechar edição" : "Editar favoritos"}
-          </Text>
-        </TouchableOpacity>
-
-        {editandoFavoritos && (
-          <View style={estilos.lista}>
-            {dadosJogos.map((jogo) => {
-              const ativo = favoritos.includes(jogo.id);
-              return (
-                <TouchableOpacity
-                  key={jogo.id}
-                  style={[
-                    estilos.card,
-                    ativo && { borderColor: "gold", borderWidth: 2 },
-                  ]}
-                  onPress={() => toggleFavorito(jogo.id)}
-                >
-                  <Image source={jogo.fonte} style={estilos.imgLista} />
-                  <Text style={estilos.nomeJogo}>{jogo.nome}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
       </ScrollView>
 
       <View style={estilos.footer}>
@@ -387,18 +362,30 @@ export default function Perfil() {
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
+  fundo: {
+    flex: 1,
+  },
+
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.9)",
+    backgroundColor: "rgba(0,0,0,0.65)",
   },
+
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  botao: { backgroundColor: "#666", padding: 8, borderRadius: 6 },
-  botaoTxt: { color: "#FFF" },
+
+  botao: {
+    backgroundColor: "#666",
+    padding: 8,
+    borderRadius: 6,
+  },
+
+  botaoTxt: {
+    color: "#FFF",
+  },
 
   botaoSalvar: {
     backgroundColor: "#4CAF50",
@@ -410,18 +397,45 @@ const estilos = StyleSheet.create({
     justifyContent: "center",
     gap: 10,
   },
-  botaoSalvarTxt: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
 
-  perfil: { flexDirection: "row", gap: 15, marginBottom: 20 },
-  nome: { color: "#E8D5A3", fontSize: 20, marginBottom: 6 },
-  bioBox: { backgroundColor: "#FFF", borderRadius: 10, padding: 10 },
+  botaoSalvarTxt: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  perfil: {
+    flexDirection: "row",
+    gap: 15,
+    marginBottom: 20,
+  },
+
+  nome: {
+    color: "#E8D5A3",
+    fontSize: 20,
+    marginBottom: 6,
+  },
+
+  bioBox: {
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    padding: 10,
+  },
+
   bioHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 5,
   },
-  bioTitulo: { fontWeight: "bold" },
-  bioTexto: { color: "#000" },
+
+  bioTitulo: {
+    fontWeight: "bold",
+  },
+
+  bioTexto: {
+    color: "#000",
+  },
+
   inputBio: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -430,48 +444,14 @@ const estilos = StyleSheet.create({
     minHeight: 60,
     textAlignVertical: "top",
   },
+
   contadorCaracteres: {
     fontSize: 10,
     color: "#666",
     textAlign: "right",
     marginTop: 4,
   },
-  salvar: {
-    marginTop: 8,
-    backgroundColor: "#333",
-    padding: 6,
-    borderRadius: 6,
-    alignItems: "center",
-  },
-  salvarTxt: { color: "#FFF" },
-  titulo: { color: "#E8D5A3", fontSize: 16, marginBottom: 10 },
-  favoritos: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 10,
-    flexWrap: "wrap",
-  },
-  img: { width: 60, height: 60, borderRadius: 8 },
-  remover: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "red",
-    borderRadius: 10,
-    padding: 2,
-  },
-  editar: { color: "#FFF", marginBottom: 15 },
-  lista: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  card: {
-    width: "30%",
-    backgroundColor: "#222",
-    padding: 5,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  imgLista: { width: 50, height: 50, borderRadius: 6 },
-  nomeJogo: { color: "#FFF", fontSize: 10, textAlign: "center", marginTop: 4 },
+
   avatar: {
     width: 90,
     height: 90,
@@ -479,6 +459,7 @@ const estilos = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#444",
   },
+
   lapis: {
     position: "absolute",
     bottom: 0,
@@ -487,36 +468,23 @@ const estilos = StyleSheet.create({
     padding: 5,
     borderRadius: 12,
   },
-  btnMini: { color: "#FFF", fontSize: 12 },
-  cor: { width: 20, height: 20, borderRadius: 10, marginRight: 5 },
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
 
-  headerAmigos: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
+  btnMini: {
+    color: "#FFF",
+    fontSize: 12,
   },
-  botaoMais: {
-    backgroundColor: "#E8D5A3",
-    borderRadius: 15,
-    width: 30,
-    height: 30,
-    justifyContent: "center",
-    alignItems: "center",
+
+  cor: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 5,
   },
-  itemAmigo: { alignItems: "center", marginRight: 15, width: 55 },
-  avatarAmigo: {
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    backgroundColor: "#444",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E8D5A3",
-    overflow: "hidden",
+
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
-  nomeAmigo: { color: "#FFF", fontSize: 10, marginTop: 4, textAlign: "center" },
-  msgVazia: { color: "#666", fontStyle: "italic", marginBottom: 20 },
 });
