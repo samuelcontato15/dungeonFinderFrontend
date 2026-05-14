@@ -6,9 +6,8 @@ import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Image,
+ Image,
   ImageBackground,
   ScrollView,
   StatusBar,
@@ -27,14 +26,9 @@ export default function Perfil() {
   const { user, signOut, updateUser } = useAuth();
 
   const [amigos, setAmigos] = useState<any[]>([]);
-  const [salvando, setSalvando] = useState(false);
-
   const [editandoBio, setEditandoBio] = useState(false);
   const [bio, setBio] = useState(user?.bio || "Olá, esse é meu perfil.");
-
   const [foto, setFoto] = useState<string | null>(user?.fotoPerfil || null);
-  const [corAvatar, setCorAvatar] = useState("#D4AF37");
-  const cores = ["#D4AF37", "#FF6B6B", "#4ECDC4", "#1A535C", "#3A86FF"];
 
   const [favoritos, setFavoritos] = useState<string[]>([]);
   const [editandoFavoritos, setEditandoFavoritos] = useState(false);
@@ -50,9 +44,7 @@ export default function Perfil() {
       const amigosResponse = await api.get(`/amizades/usuario/${user.id}`);
 
       const listaFormatada = amigosResponse.data.map((amz: any) =>
-        amz.solicitante.id === user.id
-          ? amz.destinatario
-          : amz.solicitante,
+        amz.solicitante.id === user.id ? amz.destinatario : amz.solicitante
       );
 
       setAmigos(listaFormatada);
@@ -73,6 +65,37 @@ export default function Perfil() {
       }
     } catch (err) {
       console.log("Erro carregar perfil:", err);
+    }
+  };
+
+  const salvarPerfil = async (
+    novaFoto = foto,
+    novaBio = bio,
+    novosFavoritos = favoritos
+  ) => {
+    if (!user?.id) return;
+
+    try {
+      const dadosAtualizados = {
+        nick: user.usuario,
+        bio: novaBio,
+        fotoPerfil: novaFoto,
+        favoritos: JSON.stringify(novosFavoritos),
+      };
+
+      await api.put(`/usuarios/${user.id}`, dadosAtualizados);
+
+      if (updateUser) {
+        updateUser({
+          ...user,
+          bio: novaBio,
+          fotoPerfil: novaFoto,
+        });
+      }
+
+      await carregarPerfil();
+    } catch (error) {
+      console.log("Erro ao salvar perfil:", error);
     }
   };
 
@@ -101,69 +124,21 @@ export default function Perfil() {
 
     if (!result.canceled && result.assets[0].base64) {
       const base64Image = `data:image/jpeg;base64,${result.assets[0].base64}`;
+
       setFoto(base64Image);
+
+      await salvarPerfil(base64Image, bio, favoritos);
     } else if (!result.canceled) {
       setFoto(result.assets[0].uri);
+
+      await salvarPerfil(result.assets[0].uri, bio, favoritos);
     }
   };
 
-  const removerImagem = () => {
+  const removerImagem = async () => {
     setFoto(null);
-  };
 
-  const salvarPerfil = async () => {
-    if (!user?.id) {
-      Alert.alert("Erro", "Usuário não identificado");
-      return;
-    }
-
-    setSalvando(true);
-
-    try {
-      const dadosAtualizados = {
-        nick: user.usuario,
-        bio: bio,
-        fotoPerfil: foto,
-        favoritos: JSON.stringify(favoritos),
-        corAvatar: corAvatar,
-      };
-
-      const response = await api.put(
-        `/usuarios/${user.id}`,
-        dadosAtualizados,
-      );
-
-      if (response.status === 200) {
-        if (updateUser) {
-          updateUser({
-            ...user,
-            bio: bio,
-            fotoPerfil: foto,
-          });
-        }
-
-        await carregarPerfil();
-
-        Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
-
-        setEditandoBio(false);
-        setEditandoFavoritos(false);
-      }
-    } catch (error: any) {
-      console.error("Erro ao salvar:", error);
-
-      Alert.alert(
-        "Erro",
-        error.response?.data?.message ||
-          "Não foi possível salvar as alterações",
-      );
-    } finally {
-      setSalvando(false);
-    }
-  };
-
-  const temAlteracoes = () => {
-    return editandoBio || editandoFavoritos;
+    await salvarPerfil(null, bio, favoritos);
   };
 
   const handleLogout = async () => {
@@ -195,63 +170,29 @@ export default function Perfil() {
             <Text style={estilos.botaoTxt}>Configurações</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={estilos.botao}
-            onPress={handleLogout}
-          >
+          <TouchableOpacity style={estilos.botao} onPress={handleLogout}>
             <Text style={estilos.botaoTxt}>Log-out</Text>
           </TouchableOpacity>
         </View>
-
-        {temAlteracoes() && (
-          <TouchableOpacity
-            style={estilos.botaoSalvar}
-            onPress={salvarPerfil}
-            disabled={salvando}
-          >
-            {salvando ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <>
-                <Ionicons
-                  name="save-outline"
-                  size={20}
-                  color="#FFF"
-                />
-
-                <Text style={estilos.botaoSalvarTxt}>
-                  Salvar todas as alterações
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
 
         <View style={estilos.perfil}>
           <View style={{ alignItems: "center" }}>
             <View style={{ position: "relative" }}>
               <TouchableOpacity onPress={escolherImagem}>
                 {foto ? (
-                  <Image
-                    source={{ uri: foto }}
-                    style={estilos.avatar}
-                  />
+                  <Image source={{ uri: foto }} style={estilos.avatar} />
                 ) : (
                   <View
                     style={[
                       estilos.avatar,
                       {
-                        backgroundColor: corAvatar,
+                        backgroundColor: "#D4AF37",
                         justifyContent: "center",
                         alignItems: "center",
                       },
                     ]}
                   >
-                    <Ionicons
-                      name="person"
-                      size={40}
-                      color="#FFF"
-                    />
+                    <Ionicons name="person" size={40} color="#FFF" />
                   </View>
                 )}
               </TouchableOpacity>
@@ -260,11 +201,7 @@ export default function Perfil() {
                 style={estilos.lapis}
                 onPress={escolherImagem}
               >
-                <Ionicons
-                  name="pencil"
-                  size={14}
-                  color="#000"
-                />
+                <Ionicons name="pencil" size={14} color="#000" />
               </TouchableOpacity>
             </View>
 
@@ -285,28 +222,6 @@ export default function Perfil() {
                 </TouchableOpacity>
               )}
             </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                marginTop: 8,
-              }}
-            >
-              {cores.map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setCorAvatar(c)}
-                  style={[
-                    estilos.cor,
-                    { backgroundColor: c },
-                    corAvatar === c && {
-                      borderWidth: 2,
-                      borderColor: "#FFF",
-                    },
-                  ]}
-                />
-              ))}
-            </View>
           </View>
 
           <View style={{ flex: 1 }}>
@@ -319,15 +234,9 @@ export default function Perfil() {
                 <Text style={estilos.bioTitulo}>Bio</Text>
 
                 <TouchableOpacity
-                  onPress={() =>
-                    setEditandoBio(!editandoBio)
-                  }
+                  onPress={() => setEditandoBio(!editandoBio)}
                 >
-                  <Ionicons
-                    name="pencil"
-                    size={16}
-                    color="#000"
-                  />
+                  <Ionicons name="pencil" size={16} color="#000" />
                 </TouchableOpacity>
               </View>
 
@@ -337,6 +246,9 @@ export default function Perfil() {
                     style={estilos.inputBio}
                     value={bio}
                     onChangeText={setBio}
+                    onEndEditing={() =>
+                      salvarPerfil(foto, bio, favoritos)
+                    }
                     multiline
                     placeholder="Escreva sua bio aqui..."
                     maxLength={500}
@@ -352,6 +264,152 @@ export default function Perfil() {
             </View>
           </View>
         </View>
+
+        <View style={estilos.headerAmigos}>
+          <Text style={estilos.titulo}>AMIGOS</Text>
+
+          <TouchableOpacity
+            style={estilos.botaoMais}
+            onPress={() => router.push("/amigos")}
+          >
+            <Ionicons name="add" size={20} color="#000" />
+          </TouchableOpacity>
+        </View>
+
+        {amigos.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginBottom: 20 }}
+          >
+            {amigos.map((amigo) => (
+              <View key={amigo.id} style={estilos.itemAmigo}>
+                <View style={estilos.avatarAmigo}>
+                  {amigo.fotoPerfil ? (
+                    <Image
+                      source={{ uri: amigo.fotoPerfil }}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor: "#D4AF37",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Ionicons name="person" size={20} color="#FFF" />
+                    </View>
+                  )}
+                </View>
+
+                <Text style={estilos.nomeAmigo} numberOfLines={1}>
+                  {amigo.nick}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        ) : (
+          <Text style={estilos.msgVazia}>Nenhum amigo encontrado.</Text>
+        )}
+
+        <Text style={[estilos.titulo, { marginTop: 10 }]}>
+          RPG'S FAVORITOS
+        </Text>
+
+        <View style={estilos.favoritos}>
+          {favoritos.map((id) => {
+            const jogo = dadosJogos.find((j) => j.id === id);
+
+            return jogo ? (
+              <View
+                key={id}
+                style={{
+                  position: "relative",
+                }}
+              >
+                <Image source={jogo.fonte} style={estilos.img} />
+
+                {editandoFavoritos && (
+                  <TouchableOpacity
+                    style={estilos.remover}
+                    onPress={async () => {
+                      toggleFavorito(id);
+
+                      const novosFavoritos = favoritos.filter(
+                        (f) => f !== id
+                      );
+
+                      await salvarPerfil(
+                        foto,
+                        bio,
+                        novosFavoritos
+                      );
+                    }}
+                  >
+                    <Ionicons name="close" size={14} color="#FFF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : null;
+          })}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => setEditandoFavoritos(!editandoFavoritos)}
+        >
+          <Text style={estilos.editar}>
+            {editandoFavoritos
+              ? "Fechar edição"
+              : "Editar favoritos"}
+          </Text>
+        </TouchableOpacity>
+
+        {editandoFavoritos && (
+          <View style={estilos.lista}>
+            {dadosJogos.map((jogo) => {
+              const ativo = favoritos.includes(jogo.id);
+
+              return (
+                <TouchableOpacity
+                  key={jogo.id}
+                  style={[
+                    estilos.card,
+                    ativo && {
+                      borderColor: "gold",
+                      borderWidth: 2,
+                    },
+                  ]}
+                  onPress={async () => {
+                    toggleFavorito(jogo.id);
+
+                    const novosFavoritos = favoritos.includes(jogo.id)
+                      ? favoritos.filter((f) => f !== jogo.id)
+                      : [...favoritos, jogo.id];
+
+                    await salvarPerfil(
+                      foto,
+                      bio,
+                      novosFavoritos
+                    );
+                  }}
+                >
+                  <Image
+                    source={jogo.fonte}
+                    style={estilos.imgLista}
+                  />
+
+                  <Text style={estilos.nomeJogo}>{jogo.nome}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
 
       <View style={estilos.footer}>
@@ -385,23 +443,6 @@ const estilos = StyleSheet.create({
 
   botaoTxt: {
     color: "#FFF",
-  },
-
-  botaoSalvar: {
-    backgroundColor: "#4CAF50",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-
-  botaoSalvarTxt: {
-    color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 16,
   },
 
   perfil: {
@@ -474,17 +515,118 @@ const estilos = StyleSheet.create({
     fontSize: 12,
   },
 
-  cor: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 5,
-  },
-
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
+  },
+
+  titulo: {
+    color: "#E8D5A3",
+    fontSize: 16,
+    marginBottom: 10,
+  },
+
+  favoritos: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 10,
+    flexWrap: "wrap",
+  },
+
+  img: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+  },
+
+  remover: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "red",
+    borderRadius: 10,
+    padding: 2,
+  },
+
+  editar: {
+    color: "#FFF",
+    marginBottom: 15,
+  },
+
+  lista: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+
+  card: {
+    width: "30%",
+    backgroundColor: "#222",
+    padding: 5,
+    borderRadius: 8,
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  imgLista: {
+    width: 50,
+    height: 50,
+    borderRadius: 6,
+  },
+
+  nomeJogo: {
+    color: "#FFF",
+    fontSize: 10,
+    textAlign: "center",
+    marginTop: 4,
+  },
+
+  headerAmigos: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+
+  botaoMais: {
+    backgroundColor: "#E8D5A3",
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  itemAmigo: {
+    alignItems: "center",
+    marginRight: 15,
+    width: 55,
+  },
+
+  avatarAmigo: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
+    backgroundColor: "#444",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E8D5A3",
+    overflow: "hidden",
+  },
+
+  nomeAmigo: {
+    color: "#FFF",
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: "center",
+  },
+
+  msgVazia: {
+    color: "#666",
+    fontStyle: "italic",
+    marginBottom: 20,
   },
 });
