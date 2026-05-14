@@ -1,9 +1,10 @@
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import Constants from "expo-constants";
 
 const api = axios.create({
-    baseURL: "baseURL: Constants.expoConfig?.extra?.apiUrl,",
-    headers: {"Content-Type": "application/json"},
+    baseURL: Constants.expoConfig?.extra?.apiUrl,
+    headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use(async (config) => {
