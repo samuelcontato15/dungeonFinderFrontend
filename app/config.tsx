@@ -42,9 +42,7 @@ export default function Config() {
     if (item.logout) {
       handleLogout();
       return;
-    }
-    // Navegação futura para Ajuda e Preferências
-  }
+    }  }
 
   return (
     <ImageBackground

@@ -2,8 +2,6 @@ import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-// Mapa de slug → imagens locais
 const fundosPorSlug: Record<string, any> = {
   "world-of-warcraft":        require("@/assets/fundowow.png"),
   "albion-online":            require("@/assets/fundoalbion.png"),
@@ -62,7 +60,6 @@ export default function Detalhes() {
     );
   }
 
-  // Erro ou jogo não encontrado
   if (erro || !jogo) {
     return (
       <View style={styles.center}>
@@ -93,7 +90,6 @@ export default function Detalhes() {
         >
           <View style={styles.textContainer}>
             <Text style={styles.titulo}>{jogo.nome}</Text>
-            {/* desc não existe na entidade ainda — veja observação abaixo */}
           </View>
         </ScrollView>
       </SafeAreaView>

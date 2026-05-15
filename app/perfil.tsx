@@ -47,7 +47,6 @@ export default function Perfil() {
   );
 
   const carregarPerfil = async () => {
-    // Sempre busca pelo ID salvo no contexto — o ID nunca muda mesmo que o admin altere nick/email
     if (!user?.id) return;
     try {
       const [amigosRes, perfilRes] = await Promise.all([
@@ -63,13 +62,9 @@ export default function Perfil() {
       setAmigos(listaFormatada);
 
       const userData = perfilRes.data;
-
-      // Atualiza estados locais diretamente da API — não depende do contexto/AsyncStorage
       setBio(userData.bio || "Olá, esse é meu perfil.");
       setFoto(userData.fotoPerfil || null);
       setNickLocal(userData.nick || "");
-
-      // Atualiza contexto para manter sincronia em outras telas
       updateUser?.({
         usuario: userData.nick,
         bio: userData.bio,
@@ -224,7 +219,6 @@ export default function Perfil() {
           </View>
 
           <View style={{ flex: 1 }}>
-            {/* Usa nickLocal — vem direto da API, não do contexto/AsyncStorage */}
             <Text style={estilos.nome}>
               {nickLocal.toUpperCase() || "USUÁRIO"}
             </Text>
