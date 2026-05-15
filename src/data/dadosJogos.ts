@@ -1,0 +1,51 @@
+export const dadosJogos = [
+    {
+        id: "j1",
+        nome: "WORLD OF WARCRAFT",
+        desc: "WOW é um MMORPG online da Blizzard lançado em 2004, com a possiblidade de explorar o mundo fantástico de Azeroth.",
+        fonte: require("../assets/wow.png"),
+        fundo: require("../assets/fundowow.png"),
+    },
+    {
+        id: "j2",
+        nome: "ALBION ONLINE",
+        desc: "Albion Online é um MMORPG desenvolvido pela Sandbox Interactive.",
+        fonte: require("../assets/ALBIONONLINE.png"),
+        fundo: require("../assets/fundoalbion.png"),
+    },
+    {
+        id: "j3",
+        nome: "THE ELDER SCROLLS ONLINE",
+        desc: "The Elder Scrolls Online é um MMORPG desenvolvido ZeniMax Online Studios, da série Elder Scrolls V:Skyrim.",
+        fonte: require("../assets/elder.png"),
+        fundo: require("../assets/fundoelder.png"),
+    },
+    {
+        id:"j4",
+        nome: "DAGGERHEART",
+        desc: "É um RPG de mesa da fantasia, repleto de heroísmo e mundos vibrantes, construídos em colaboração com seu grupo de jogadores.",
+        fonte: require("../assets/dagger.png"),
+        fundo: require("../assets/fundodagger.png"),
+    },
+    {
+        id:"r1",
+        nome: "DUNGEON & DRAGONS",
+        desc: "O mais famoso RPG de mesa do mundo, focado em narrativa cooperativa, fantasia medieval e exploração.",
+        fonte: require("../assets/DeD.png"),
+        fundo: require("../assets/fundoded.png"),
+    },
+    {
+        id:"r2",
+        nome: "ORDEM PARANORMAL",
+        desc: "O RPG de mesa da WebSérie de mesmo nome criado pelo youtuber Cellbit.",
+        fonte: require("../assets/rpgdocellbit.png"),
+        fundo: require("../assets/fundoop.png"),
+    },
+    {
+        id:"r3",
+        nome: "TORMENTA",
+        desc: "É um RPG de mesa de fantasia medieval brasileiro criado em 1999.",
+        fonte: require("../assets/tormenta.png"),
+        fundo: require("../assets/fundotormenta.png"),
+    },
+];
