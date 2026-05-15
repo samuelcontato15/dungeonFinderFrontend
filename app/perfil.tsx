@@ -20,11 +20,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-<<<<<<< HEAD
 import { useJogos } from "../src/data/dadosJogos";
-=======
-import { dadosJogos } from "../src/data/dadosJogos";
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
 
 const STORAGE_FAVORITOS = "@DungeonFinder:favoritos";
 
@@ -37,21 +33,15 @@ export default function Perfil() {
   const [editandoBio, setEditandoBio] = useState(false);
   const [bio, setBio] = useState(user?.bio || "Olá, esse é meu perfil.");
   const [foto, setFoto] = useState<string | null>(user?.fotoPerfil || null);
-<<<<<<< HEAD
   const { jogos: dadosJogos, loading, erro } = useJogos();
-=======
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
 
   const [favoritos, setFavoritos] = useState<string[]>([]);
   const [editandoFavoritos, setEditandoFavoritos] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
 
-<<<<<<< HEAD
 
-=======
   // Carregar perfil (backend) e favoritos (local)
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
   useEffect(() => {
     carregarPerfil();
     carregarFavoritosLocais();
@@ -108,10 +98,7 @@ export default function Perfil() {
     setSalvando(true);
 
     try {
-<<<<<<< HEAD
-=======
       // 1. Salvar bio e foto no backend
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
       const dadosAtualizados = {
         nick: user.usuario,
         bio: bio,
@@ -120,10 +107,7 @@ export default function Perfil() {
       const response = await api.put(`/usuarios/${user.id}`, dadosAtualizados);
 
       if (response.status === 200) {
-<<<<<<< HEAD
-=======
         // Atualizar contexto do usuário
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
         if (updateUser) {
           updateUser({
             ...user,
@@ -132,11 +116,6 @@ export default function Perfil() {
           });
         }
 
-<<<<<<< HEAD
-
-=======
-        // 2. Salvar favoritos localmente
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
         await salvarFavoritosLocais(favoritos);
 
         Alert.alert("Sucesso", "Perfil e favoritos atualizados!");
@@ -213,7 +192,6 @@ export default function Perfil() {
         }}
       >
         <View style={estilos.header}>
-<<<<<<< HEAD
           <TouchableOpacity
             style={estilos.botao}
             onPress={() => router.push("/config")}
@@ -241,13 +219,11 @@ export default function Perfil() {
             <Text style={estilos.botaoTxt}>
               Log-out
             </Text>
-=======
           <TouchableOpacity style={estilos.botao} onPress={() => router.push("/config")}>
             <Text style={estilos.botaoTxt}>Configurações</Text>
           </TouchableOpacity>
           <TouchableOpacity style={estilos.botao} onPress={handleLogout}>
             <Text style={estilos.botaoTxt}>Log-out</Text>
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
           </TouchableOpacity>
         </View>
 
@@ -374,14 +350,10 @@ export default function Perfil() {
         <Text style={[estilos.titulo, { marginTop: 10 }]}>RPG'S FAVORITOS</Text>
         <View style={estilos.favoritos}>
           {favoritos.map((id) => {
-            const jogo = dadosJogos.find((j) => j.id === id);
+            const jogo = dadosJogos.find((j: { id: string; }) => j.id === id);
             return jogo ? (
               <View key={id} style={{ position: "relative" }}>
-<<<<<<< HEAD
                 <Image source={jogo.fundo} style={estilos.img} />
-=======
-                <Image source={jogo.fonte} style={estilos.img} />
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
                 {editandoFavoritos && (
                   <TouchableOpacity
                     style={estilos.remover}
@@ -411,11 +383,7 @@ export default function Perfil() {
                   style={[estilos.card, ativo && { borderColor: "gold", borderWidth: 2 }]}
                   onPress={() => toggleFavorito(jogo.id)}
                 >
-<<<<<<< HEAD
                   <Image source={jogo.fundo} style={estilos.imgLista} />
-=======
-                  <Image source={jogo.fonte} style={estilos.imgLista} />
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
                   <Text style={estilos.nomeJogo}>{jogo.nome}</Text>
                 </TouchableOpacity>
               );
@@ -432,7 +400,6 @@ export default function Perfil() {
 }
 
 const estilos = StyleSheet.create({
-<<<<<<< HEAD
   botaoAdmin: {
   backgroundColor: "#D4AF37",
   padding: 8,
@@ -443,8 +410,6 @@ botaoAdminTxt: {
   color: "#000",
   fontWeight: "bold",
 },
-=======
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
   fundo: { flex: 1 },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.65)" },
   header: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
@@ -479,9 +444,5 @@ botaoAdminTxt: {
   msgVazia: { color: "#666", fontStyle: "italic", marginBottom: 20 },
   botaoSalvar: { backgroundColor: "#4CAF50", padding: 12, borderRadius: 8, marginBottom: 20, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10 },
   botaoSalvarTxt: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
-<<<<<<< HEAD
 });
 
-=======
-});
->>>>>>> 41d401315629be16c93fcb19bbf4ce4203b282cc
