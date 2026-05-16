@@ -39,7 +39,7 @@ export default function DungeonEntrada() {
           <View style={estilos.botoes}>
             <TouchableOpacity
               style={estilos.botaoPrimario}
-              onPress={() => router.push("/login")}
+              onPress={() => router.replace("/login")}
               activeOpacity={0.8}
             >
               <Text style={estilos.botaoPrimarioTexto}>Entrar na Dungeon</Text>

@@ -1,3 +1,5 @@
+import { Redirect } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
 import React from "react";
 import {
   View,
@@ -7,8 +9,7 @@ import {
   ImageBackground,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-import BarraNavegacao           from "@/components/BarraNavegacao";
+import BarraNavegacao from "@/components/BarraNavegacao";
 import SecaoJogos, { ItemJogo } from "@/components/SecaoJogos";
 
 const novidades: ItemJogo[] = [
@@ -31,6 +32,7 @@ const rpgMesa: ItemJogo[] = [
 
 export default function Inicio() {
   const margens = useSafeAreaInsets();
+  const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <ImageBackground

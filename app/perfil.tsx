@@ -101,6 +101,7 @@ export default function Perfil() {
     try {
       const response = await api.put(`/usuarios/${user.id}`, {
         nick: nickLocal,
+        email: user.email,
         bio,
         fotoPerfil: foto,
       });
@@ -140,7 +141,7 @@ export default function Perfil() {
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.4,
       base64: true,
     });
     if (!result.canceled) {

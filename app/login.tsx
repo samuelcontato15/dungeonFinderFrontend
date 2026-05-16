@@ -1,21 +1,21 @@
+import { useAuth } from "@/context/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  ImageBackground,
+  KeyboardAvoidingView,
+  Platform,
+  StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Alert,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const router = useRouter();
@@ -23,26 +23,21 @@ export default function Login() {
   const { signIn } = useAuth();
 
   const [emailOrUser, setEmailOrUser] = useState("");
-  const [senha, setSenha]             = useState("");
+  const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [carregando, setCarregando]   = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
   async function handleEntrar() {
-    if (!emailOrUser.trim() || !senha.trim()) {
-      Alert.alert("Atenção", "Preencha com e-mail e senha.");
-      return;
-    }
     try {
       setCarregando(true);
       await signIn(emailOrUser.trim(), senha);
-      router.replace("/home");
+      router.replace("/");
     } catch (e) {
       Alert.alert("Erro", "Não foi possível fazer login. Verifique suas credenciais.");
     } finally {
       setCarregando(false);
     }
   }
-
   return (
     <ImageBackground
       source={require("../assets/fundo1.png")}
@@ -57,7 +52,7 @@ export default function Login() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={[estilos.container, { paddingTop: margens.top + 10, paddingBottom: margens.bottom + 20 }]}>
-         
+
           <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#D4AF37" />
             <Text style={estilos.btnVoltarTexto}>Voltar</Text>
@@ -66,7 +61,7 @@ export default function Login() {
           <View style={estilos.corpo}>
             <Text style={estilos.titulo}>Login</Text>
 
-          
+
             <View style={estilos.campoWrapper}>
               <Text style={estilos.label}>Email</Text>
               <View style={estilos.inputContainer}>
@@ -82,7 +77,7 @@ export default function Login() {
               </View>
             </View>
 
-          
+
             <View style={estilos.campoWrapper}>
               <Text style={estilos.label}>Senha</Text>
               <View style={estilos.inputContainer}>
@@ -100,14 +95,14 @@ export default function Login() {
               </View>
             </View>
 
-        <View style={estilos.esqueceuLinha}>
-  <Text style={estilos.esqueceuTexto}>Esqueceu a senha? </Text>
-  <TouchableOpacity onPress={() => router.push("/esquecisenha")}>
-    <Text style={estilos.esqueceuLink}>Clique aqui</Text>
-  </TouchableOpacity>
-</View>
+            <View style={estilos.esqueceuLinha}>
+              <Text style={estilos.esqueceuTexto}>Esqueceu a senha? </Text>
+              <TouchableOpacity onPress={() => router.push("/esquecisenha")}>
+                <Text style={estilos.esqueceuLink}>Clique aqui</Text>
+              </TouchableOpacity>
+            </View>
 
-    
+
             <TouchableOpacity
               style={[estilos.botao, carregando && { opacity: 0.7 }]}
               onPress={handleEntrar}
@@ -120,7 +115,7 @@ export default function Login() {
               }
             </TouchableOpacity>
 
-          
+
             <View style={estilos.cadastroLinha}>
               <Text style={estilos.cadastroTexto}>Não tem conta? </Text>
               <TouchableOpacity onPress={() => router.push("/cadastro")}>

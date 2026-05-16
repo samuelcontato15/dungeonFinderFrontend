@@ -47,7 +47,7 @@ export default function Cadastro() {
       setCarregando(true);
       await signUp(usuario.trim(), email.trim(), senha);
       Alert.alert("Sucesso!", "Conta criada com sucesso!", [
-        { text: "Entrar", onPress: () => router.replace("/home") },
+        { text: "Entrar", onPress: () => router.replace("/") },
       ]);
       } catch (e: any) {
       Alert.alert(
@@ -156,7 +156,7 @@ export default function Cadastro() {
 
           <View style={estilos.loginLinha}>
             <Text style={estilos.loginTexto}>Já tem conta? </Text>
-            <TouchableOpacity onPress={() => router.push("/login")}>
+            <TouchableOpacity onPress={() => router.replace("/")}>
               <Text style={estilos.loginLink}>Entrar</Text>
             </TouchableOpacity>
           </View>
