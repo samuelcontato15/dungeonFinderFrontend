@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
   Alert,
-  TextInput,
+  FlatList,
   ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import api from "@/services/api";
@@ -53,10 +53,10 @@ export default function Usuarios() {
 
   async function editarUsuario(id: string) {
     try {
-      await api.put(`/usuarios/${id}`, {
-        nick,
-        bio,
-      });
+      const payload: any = { nick, email, bio };
+      if (senhaHash.trim()) payload.senhaHash = senhaHash;
+
+      await api.put(`/usuarios/${id}`, payload);
 
       Alert.alert("Sucesso", "Usuário atualizado");
 
@@ -95,9 +95,7 @@ export default function Usuarios() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>
-        Usuários
-      </Text>
+      <Text style={styles.title}>Usuários</Text>
 
       <TextInput
         style={styles.input}
@@ -117,7 +115,11 @@ export default function Usuarios() {
 
       <TextInput
         style={styles.input}
-        placeholder="Senha"
+        placeholder={
+          usuarioSelecionado
+            ? "Nova senha (deixe em branco para não alterar)"
+            : "Senha"
+        }
         placeholderTextColor="#999"
         secureTextEntry
         value={senhaHash}
@@ -135,22 +137,13 @@ export default function Usuarios() {
       {usuarioSelecionado ? (
         <TouchableOpacity
           style={styles.editar}
-          onPress={() =>
-            editarUsuario(usuarioSelecionado.id)
-          }
+          onPress={() => editarUsuario(usuarioSelecionado.id)}
         >
-          <Text style={styles.botaoTxt}>
-            Salvar edição
-          </Text>
+          <Text style={styles.botaoTxt}>Salvar edição</Text>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity
-          style={styles.criar}
-          onPress={criarUsuario}
-        >
-          <Text style={styles.botaoTxt}>
-            Criar usuário
-          </Text>
+        <TouchableOpacity style={styles.criar} onPress={criarUsuario}>
+          <Text style={styles.botaoTxt}>Criar usuário</Text>
         </TouchableOpacity>
       )}
 
@@ -161,44 +154,34 @@ export default function Usuarios() {
         renderItem={({ item }) => (
           <View style={styles.card}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.nome}>
-                {item.nick}
-              </Text>
+              <Text style={styles.nome}>{item.nick}</Text>
 
-              <Text style={styles.texto}>
-                {item.email}
-              </Text>
+              <Text style={styles.texto}>{item.email}</Text>
 
-              <Text style={styles.bio}>
-                {item.bio || "Sem bio"}
-              </Text>
+              <Text style={styles.bio}>{item.bio || "Sem bio"}</Text>
             </View>
 
             <View style={{ gap: 10 }}>
               <TouchableOpacity
                 style={styles.editar}
-                onPress={() => {
-                  setUsuarioSelecionado(item);
-
-                  setNick(item.nick);
-                  setEmail(item.email);
-                  setBio(item.bio || "");
+                onPress={async () => {
+                  const response = await api.get(`/usuarios/${item.id}`);
+                  const usuario = response.data;
+                  setUsuarioSelecionado(usuario);
+                  setNick(usuario.nick || "");
+                  setEmail(usuario.email || "");
+                  setSenhaHash("");
+                  setBio(usuario.bio || "");
                 }}
               >
-                <Text style={styles.botaoTxt}>
-                  Editar
-                </Text>
+                <Text style={styles.botaoTxt}>Editar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.deletar}
-                onPress={() =>
-                  deletarUsuario(item.id)
-                }
+                onPress={() => deletarUsuario(item.id)}
               >
-                <Text style={styles.botaoTxt}>
-                  Deletar
-                </Text>
+                <Text style={styles.botaoTxt}>Deletar</Text>
               </TouchableOpacity>
             </View>
           </View>

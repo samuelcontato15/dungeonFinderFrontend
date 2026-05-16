@@ -1,13 +1,13 @@
+import { Link } from "expo-router";
 import React from "react";
 import {
-  View,
-  Text,
-  ScrollView,
   Image,
-  TouchableOpacity,
+  ScrollView,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Link } from "expo-router";
 
 export type ItemJogo = {
   id: string;
@@ -25,7 +25,7 @@ export default function SecaoJogos({
   titulo,
   dados,
   larguraCard = 150,
-  alturaCard  = 90,
+  alturaCard = 90,
 }: Propriedades) {
   return (
     <View style={estilos.secao}>
@@ -41,13 +41,17 @@ export default function SecaoJogos({
       >
         {dados.map((item) => (
           <Link key={item.id} href={`/detalhes/${item.id}`} asChild>
-          <TouchableOpacity  activeOpacity={0.8}>
-            <Image
-              source={item.fonte}
-              style={{ width: larguraCard, height: alturaCard, borderRadius: 10 }}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+            <TouchableOpacity activeOpacity={0.8}>
+              <Image
+                source={item.fonte}
+                style={{
+                  width: larguraCard,
+                  height: alturaCard,
+                  borderRadius: 10,
+                }}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
           </Link>
         ))}
       </ScrollView>
@@ -58,7 +62,7 @@ export default function SecaoJogos({
 }
 
 const estilos = StyleSheet.create({
-  secao:       { marginTop: 18 },
+  secao: { marginTop: 18 },
   linhaTitulo: { flexDirection: "row", alignItems: "center", marginBottom: 12 },
   acento: {
     width: 4,
