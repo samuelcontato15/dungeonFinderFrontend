@@ -35,28 +35,49 @@ type GuildaAPI = {
 export default function Comunidade() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
+  const router = useRouter();
 
   const [aba, setAba] = useState<"usuarios" | "guildas">("usuarios");
   const [usuarios, setUsuarios] = useState<UsuarioAPI[]>([]);
   const [guildas, setGuildas] = useState<GuildaAPI[]>([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [amigosIds, setAmigosIds] = useState<string[]>([]); // IDs dos amigos
 
   useFocusEffect(
     useCallback(() => {
       carregarDados();
-    }, [])
+    }, []),
   );
 
   const carregarDados = async () => {
     setCarregando(true);
     try {
-      const [usuariosRes, guildasRes] = await Promise.all([
+      // Buscar usuários, guildas e amizades do usuário logado
+      const [usuariosRes, guildasRes, amizadesRes] = await Promise.all([
         api.get("/usuarios"),
         api.get("/guildas"),
+        user?.id
+          ? api.get(`/amizades/usuario/${user.id}`)
+          : Promise.resolve({ data: [] }),
       ]);
-      setUsuarios(usuariosRes.data.filter((u: UsuarioAPI) => u.id !== user?.id));
+
+      // Filtra o próprio usuário da lista
+      setUsuarios(
+        usuariosRes.data.filter((u: UsuarioAPI) => u.id !== user?.id),
+      );
       setGuildas(guildasRes.data);
+
+      // Extrai os IDs dos amigos (amizades com status ACEITO)
+      const amizades = amizadesRes.data || [];
+      const amigos = amizades
+        .filter((amz: any) => amz.status === "ACEITO")
+        .map((amz: any) =>
+          amz.solicitante.id === user?.id
+            ? amz.destinatario.id
+            : amz.solicitante.id,
+        );
+      setAmigosIds(amigos);
     } catch (err) {
       console.log("Erro ao carregar comunidade:", err);
     } finally {
@@ -64,38 +85,45 @@ export default function Comunidade() {
     }
   };
 
-  const router = useRouter();
-
   const usuariosFiltrados = usuarios.filter((u) =>
-    u.nick.toLowerCase().includes(busca.toLowerCase())
+    u.nick.toLowerCase().includes(busca.toLowerCase()),
   );
 
   const guildasFiltradas = guildas.filter((g) =>
-    g.nome.toLowerCase().includes(busca.toLowerCase())
+    g.nome.toLowerCase().includes(busca.toLowerCase()),
   );
 
-  const renderUsuario = ({ item }: { item: UsuarioAPI }) => (
-    <TouchableOpacity
-      style={estilos.card}
-      onPress={() => {
-        router.push(`/detalhes/usuario/${item.id}`);
-      }}
-    >
-      <View style={estilos.avatarCirculo}>
-        {item.fotoPerfil ? (
-          <Image source={{ uri: item.fotoPerfil }} style={estilos.avatarImg} />
-        ) : (
-          <Ionicons name="person" size={26} color="#E8D5A3" />
+  const renderUsuario = ({ item }: { item: UsuarioAPI }) => {
+    const isAmigo = amigosIds.includes(item.id);
+    return (
+      <TouchableOpacity
+        style={[estilos.card, isAmigo && estilos.cardAmigo]}
+        onPress={() => router.push(`/detalhes/usuario/${item.id}`)}
+      >
+        <View style={estilos.avatarCirculo}>
+          {item.fotoPerfil ? (
+            <Image
+              source={{ uri: item.fotoPerfil }}
+              style={estilos.avatarImg}
+            />
+          ) : (
+            <Ionicons name="person" size={26} color="#E8D5A3" />
+          )}
+        </View>
+        <View style={estilos.cardInfo}>
+          <Text style={estilos.cardNome}>{item.nick}</Text>
+          <Text style={estilos.cardSub} numberOfLines={1}>
+            {item.bio || "Sem bio"}
+          </Text>
+        </View>
+        {isAmigo && (
+          <View style={estilos.amigoIndicator}>
+            <Ionicons name="star" size={14} color="#D4AF37" />
+          </View>
         )}
-      </View>
-      <View style={estilos.cardInfo}>
-        <Text style={estilos.cardNome}>{item.nick}</Text>
-        <Text style={estilos.cardSub} numberOfLines={1}>
-          {item.bio || "Sem bio"}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderGuilda = ({ item }: { item: GuildaAPI }) => (
     <View style={estilos.card}>
@@ -141,7 +169,12 @@ export default function Comunidade() {
               size={16}
               color={aba === "usuarios" ? "#1a1008" : "#E8D5A3"}
             />
-            <Text style={[estilos.abaTxt, aba === "usuarios" && estilos.abaTxtAtiva]}>
+            <Text
+              style={[
+                estilos.abaTxt,
+                aba === "usuarios" && estilos.abaTxtAtiva,
+              ]}
+            >
               Usuários
             </Text>
           </TouchableOpacity>
@@ -158,7 +191,9 @@ export default function Comunidade() {
               size={16}
               color={aba === "guildas" ? "#1a1008" : "#E8D5A3"}
             />
-            <Text style={[estilos.abaTxt, aba === "guildas" && estilos.abaTxtAtiva]}>
+            <Text
+              style={[estilos.abaTxt, aba === "guildas" && estilos.abaTxtAtiva]}
+            >
               Guildas
             </Text>
           </TouchableOpacity>
@@ -169,7 +204,9 @@ export default function Comunidade() {
           <Ionicons name="search-outline" size={18} color="#888" />
           <TextInput
             style={estilos.input}
-            placeholder={aba === "usuarios" ? "Buscar usuário..." : "Buscar guilda..."}
+            placeholder={
+              aba === "usuarios" ? "Buscar usuário..." : "Buscar guilda..."
+            }
             placeholderTextColor="#888"
             value={busca}
             onChangeText={setBusca}
@@ -194,11 +231,17 @@ export default function Comunidade() {
             data={usuariosFiltrados}
             keyExtractor={(item) => item.id}
             renderItem={renderUsuario}
-            contentContainerStyle={{ gap: 10, paddingBottom: 120, paddingTop: 10 }}
+            contentContainerStyle={{
+              gap: 10,
+              paddingBottom: 120,
+              paddingTop: 10,
+            }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <Text style={estilos.vazio}>
-                {busca ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+                {busca
+                  ? "Nenhum usuário encontrado"
+                  : "Nenhum usuário cadastrado"}
               </Text>
             }
           />
@@ -207,11 +250,17 @@ export default function Comunidade() {
             data={guildasFiltradas}
             keyExtractor={(item) => item.id}
             renderItem={renderGuilda}
-            contentContainerStyle={{ gap: 10, paddingBottom: 120, paddingTop: 10 }}
+            contentContainerStyle={{
+              gap: 10,
+              paddingBottom: 120,
+              paddingTop: 10,
+            }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <Text style={estilos.vazio}>
-                {busca ? "Nenhuma guilda encontrada" : "Nenhuma guilda cadastrada"}
+                {busca
+                  ? "Nenhuma guilda encontrada"
+                  : "Nenhuma guilda cadastrada"}
               </Text>
             }
           />
@@ -227,17 +276,14 @@ export default function Comunidade() {
 
 const estilos = StyleSheet.create({
   fundo: { flex: 1 },
-
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.65)",
   },
-
   container: {
     flex: 1,
     paddingHorizontal: 20,
   },
-
   titulo: {
     color: "#E8D5A3",
     fontSize: 22,
@@ -245,13 +291,11 @@ const estilos = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 16,
   },
-
   abas: {
     flexDirection: "row",
     gap: 10,
     marginBottom: 10,
   },
-
   aba: {
     flex: 1,
     flexDirection: "row",
@@ -263,21 +307,17 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D4AF37",
   },
-
   abaAtiva: {
     backgroundColor: "#D4AF37",
   },
-
   abaTxt: {
     color: "#E8D5A3",
     fontWeight: "700",
     fontSize: 14,
   },
-
   abaTxtAtiva: {
     color: "#1a1008",
   },
-
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -287,14 +327,12 @@ const estilos = StyleSheet.create({
     gap: 8,
     marginBottom: 4,
   },
-
   input: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 14,
     color: "#1a1008",
   },
-
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -305,7 +343,15 @@ const estilos = StyleSheet.create({
     borderColor: "rgba(212,175,55,0.2)",
     gap: 12,
   },
-
+  cardAmigo: {
+    borderColor: "#D4AF37",
+    borderWidth: 2,
+    shadowColor: "#D4AF37",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 8,
+  },
   avatarCirculo: {
     width: 52,
     height: 52,
@@ -317,35 +363,34 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E8D5A3",
   },
-
   avatarImg: {
     width: "100%",
     height: "100%",
   },
-
   cardInfo: {
     flex: 1,
     gap: 4,
   },
-
   cardNome: {
     color: "#E8D5A3",
     fontSize: 15,
     fontWeight: "700",
   },
-
   cardSub: {
     color: "#aaa",
     fontSize: 12,
   },
-
+  amigoIndicator: {
+    backgroundColor: "rgba(212,175,55,0.2)",
+    borderRadius: 12,
+    padding: 4,
+  },
   vazio: {
     color: "#999",
     fontStyle: "italic",
     textAlign: "center",
     marginTop: 40,
   },
-
   footer: {
     position: "absolute",
     bottom: 0,

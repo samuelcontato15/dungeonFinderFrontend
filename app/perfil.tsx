@@ -2,7 +2,6 @@ import BarraNavegacao from "@/components/BarraNavegacao";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
@@ -20,29 +19,31 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { dadosJogos } from "../src/data/dadosJogos";
 
 export default function Perfil() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, signOut, updateUser } = useAuth();
 
-  const chave = `@DungeonFinder:favoritos:${user?.id}`;
-
   const [amigos, setAmigos] = useState<any[]>([]);
   const [editandoBio, setEditandoBio] = useState(false);
   const [bio, setBio] = useState(user?.bio || "Olá, esse é meu perfil.");
   const [foto, setFoto] = useState<string | null>(user?.fotoPerfil || null);
   const [nickLocal, setNickLocal] = useState(user?.usuario || "");
-  const [favoritos, setFavoritos] = useState<string[]>([]);
-  const [editandoFavoritos, setEditandoFavoritos] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
+
+  // Favoritos: lista de IDs dos jogos favoritos
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+  const [jogos, setJogos] = useState<any[]>([]); // lista de todos os jogos
+  const [editandoFavoritos, setEditandoFavoritos] = useState(false);
+  const [salvandoFavorito, setSalvandoFavorito] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       carregarPerfil();
       carregarFavoritos();
+      carregarJogos();
     }, [user?.id]),
   );
 
@@ -79,10 +80,47 @@ export default function Perfil() {
   const carregarFavoritos = async () => {
     if (!user?.id) return;
     try {
-      const salvo = await AsyncStorage.getItem(chave);
-      setFavoritos(salvo ? JSON.parse(salvo) : []);
-    } catch {
-      setFavoritos([]);
+      const response = await api.get(`/jogos_favoritos/usuario/${user.id}`);
+      // response.data é uma lista de JogoFavorito com o campo `jogo` populado
+      const ids = response.data.map((fav: any) => fav.jogo.id);
+      setFavoritos(ids);
+    } catch (error) {
+      console.log("Erro ao carregar favoritos:", error);
+    }
+  };
+
+  const carregarJogos = async () => {
+    try {
+      const response = await api.get("/jogos");
+      setJogos(response.data);
+    } catch (error) {
+      console.log("Erro ao carregar jogos:", error);
+    }
+  };
+
+  const toggleFavorito = async (jogoId: string) => {
+    if (!user?.id) return;
+    const isFav = favoritos.includes(jogoId);
+    setSalvandoFavorito(jogoId);
+    try {
+      if (isFav) {
+        await api.delete(`/jogos_favoritos?jogoId=${jogoId}`, {
+          headers: { "X-Usuario-Id": user.id },
+        });
+        setFavoritos((prev) => prev.filter((id) => id !== jogoId));
+      } else {
+        await api.post(
+          `/jogos_favoritos?jogoId=${jogoId}`,
+          {},
+          { headers: { "X-Usuario-Id": user.id } },
+        );
+        setFavoritos((prev) => [...prev, jogoId]);
+      }
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Erro ao atualizar favorito";
+      Alert.alert("Erro", msg);
+    } finally {
+      setSalvandoFavorito(null);
     }
   };
 
@@ -103,7 +141,6 @@ export default function Perfil() {
 
       if (response.status === 200) {
         updateUser?.({ usuario: nickLocal, bio, fotoPerfil: foto });
-        await AsyncStorage.setItem(chave, JSON.stringify(favoritos));
         Alert.alert("Sucesso", "Perfil atualizado com sucesso!");
         setEditandoBio(false);
         setEditandoFavoritos(false);
@@ -118,13 +155,6 @@ export default function Perfil() {
     } finally {
       setSalvando(false);
     }
-  };
-
-  const toggleFavorito = (id: string) => {
-    setFavoritos((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
-    );
-    setTemAlteracoes(true);
   };
 
   const escolherImagem = async () => {
@@ -291,7 +321,12 @@ export default function Perfil() {
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {amigos.map((a) => (
-              <View key={a.id} style={estilos.itemAmigo}>
+              <TouchableOpacity
+                key={a.id}
+                style={estilos.itemAmigo}
+                onPress={() => router.push(`/detalhes/usuario/${a.id}`)}
+                activeOpacity={0.7}
+              >
                 <View style={estilos.avatarAmigo}>
                   {a.fotoPerfil ? (
                     <Image
@@ -303,7 +338,7 @@ export default function Perfil() {
                   )}
                 </View>
                 <Text style={estilos.nomeAmigo}>{a.nick}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )}
@@ -324,14 +359,27 @@ export default function Perfil() {
           <Text style={estilos.msgVazia}>Nenhum jogo favorito adicionado</Text>
         )}
 
+        {/* EXIBIÇÃO DOS FAVORITOS */}
         <View style={estilos.favoritos}>
           {favoritos.map((id) => {
-            const jogo = dadosJogos.find((j: any) => j.id === id);
+            const jogo = jogos.find((j: any) => j.id === id);
             if (!jogo) return null;
             return (
               <View key={id} style={estilos.jogoFavItem}>
-                <Image source={jogo.fundo} style={estilos.img} />
-                <Text style={estilos.jogoFavNome}>{jogo.nome}</Text>
+                {jogo.capa ? (
+                  <Image source={{ uri: jogo.capa }} style={estilos.img} />
+                ) : (
+                  <View style={estilos.placeholderImg}>
+                    <Ionicons
+                      name="game-controller"
+                      size={28}
+                      color="#D4AF37"
+                    />
+                  </View>
+                )}
+                <Text style={estilos.jogoFavNome}>
+                  {jogo.nome.toUpperCase()}
+                </Text>
               </View>
             );
           })}
@@ -340,17 +388,36 @@ export default function Perfil() {
         {/* LISTA PARA EDITAR FAVORITOS */}
         {editandoFavoritos && (
           <View style={estilos.listaJogos}>
-            {dadosJogos.map((jogo: any) => {
+            {jogos.map((jogo: any) => {
               const isFav = favoritos.includes(jogo.id);
+              const estaSalvando = salvandoFavorito === jogo.id;
               return (
                 <TouchableOpacity
                   key={jogo.id}
                   style={[estilos.jogoItem, isFav && estilos.jogoItemAtivo]}
                   onPress={() => toggleFavorito(jogo.id)}
+                  disabled={estaSalvando}
                 >
-                  <Image source={jogo.fundo} style={estilos.jogoItemImg} />
+                  {jogo.capa ? (
+                    <Image
+                      source={{ uri: jogo.capa }}
+                      style={estilos.jogoItemImg}
+                    />
+                  ) : (
+                    <View style={estilos.jogoItemImgPlaceholder}>
+                      {estaSalvando ? (
+                        <ActivityIndicator size="small" color="#FFF" />
+                      ) : (
+                        <Ionicons
+                          name="game-controller"
+                          size={20}
+                          color="#FFF"
+                        />
+                      )}
+                    </View>
+                  )}
                   <Text style={estilos.jogoItemNome}>{jogo.nome}</Text>
-                  {isFav && (
+                  {isFav && !estaSalvando && (
                     <View style={estilos.favBadge}>
                       <Ionicons name="checkmark" size={14} color="#FFF" />
                       <Text style={estilos.favBadgeTxt}>Favorito</Text>
@@ -372,66 +439,40 @@ export default function Perfil() {
 
 const estilos = StyleSheet.create({
   fundo: { flex: 1 },
-
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.65)",
   },
-
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 20,
     gap: 10,
   },
-
   botao: {
     backgroundColor: "#555",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
   },
-
   botaoTxt: { color: "#FFF", fontSize: 12 },
-
   botaoAdmin: {
     backgroundColor: "#D4AF37",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
   },
-
   botaoAdminTxt: { color: "#000", fontWeight: "bold", fontSize: 12 },
-
-  perfil: {
-    flexDirection: "row",
-    gap: 15,
-    marginBottom: 20,
-  },
-
-  nome: {
-    color: "#E8D5A3",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 6,
-  },
-
-  bioBox: {
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    padding: 10,
-  },
-
+  perfil: { flexDirection: "row", gap: 15, marginBottom: 20 },
+  nome: { color: "#E8D5A3", fontSize: 20, fontWeight: "bold", marginBottom: 6 },
+  bioBox: { backgroundColor: "#FFF", borderRadius: 10, padding: 10 },
   bioHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 5,
   },
-
   bioTitulo: { fontWeight: "bold", color: "#333" },
-
   bioTexto: { color: "#333", fontSize: 13 },
-
   inputBio: {
     borderWidth: 1,
     borderColor: "#ccc",
@@ -440,14 +481,12 @@ const estilos = StyleSheet.create({
     minHeight: 60,
     fontSize: 13,
   },
-
   contadorCaracteres: {
     fontSize: 11,
     color: "#999",
     textAlign: "right",
     marginTop: 4,
   },
-
   avatar: {
     width: 90,
     height: 90,
@@ -455,7 +494,6 @@ const estilos = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#E8D5A3",
   },
-
   avatarFake: {
     width: 90,
     height: 90,
@@ -464,14 +502,7 @@ const estilos = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  btnMini: {
-    color: "#CCC",
-    fontSize: 11,
-    marginTop: 5,
-    textAlign: "center",
-  },
-
+  btnMini: { color: "#CCC", fontSize: 11, marginTop: 5, textAlign: "center" },
   botaoSalvar: {
     backgroundColor: "#4CAF50",
     padding: 12,
@@ -482,9 +513,7 @@ const estilos = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
   },
-
   botaoSalvarTxt: { color: "#FFF", fontWeight: "bold", fontSize: 15 },
-
   tituloRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -492,17 +521,9 @@ const estilos = StyleSheet.create({
     marginTop: 10,
     marginBottom: 10,
   },
-
   titulo: { color: "#E8D5A3", fontSize: 15, fontWeight: "bold" },
-
   linkAcao: { color: "#D4AF37", fontSize: 13 },
-
-  itemAmigo: {
-    alignItems: "center",
-    marginRight: 15,
-    width: 65,
-  },
-
+  itemAmigo: { alignItems: "center", marginRight: 15, width: 65 },
   avatarAmigo: {
     width: 48,
     height: 48,
@@ -514,41 +535,38 @@ const estilos = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E8D5A3",
   },
-
-  nomeAmigo: {
-    color: "#FFF",
-    fontSize: 11,
-    marginTop: 4,
-    textAlign: "center",
-  },
-
+  nomeAmigo: { color: "#FFF", fontSize: 11, marginTop: 4, textAlign: "center" },
   msgVazia: {
     color: "#999",
     fontStyle: "italic",
     marginBottom: 10,
     fontSize: 13,
   },
-
   favoritos: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
     marginBottom: 10,
   },
-
   jogoFavItem: { alignItems: "center", width: 65 },
-
   jogoFavNome: {
     color: "#FFF",
     fontSize: 10,
     textAlign: "center",
     marginTop: 4,
   },
-
   img: { width: 60, height: 60, borderRadius: 8 },
-
+  placeholderImg: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: "#2A2A2A",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+  },
   listaJogos: { gap: 8, marginBottom: 10 },
-
   jogoItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -557,17 +575,21 @@ const estilos = StyleSheet.create({
     padding: 8,
     gap: 10,
   },
-
   jogoItemAtivo: {
     backgroundColor: "rgba(212,175,55,0.2)",
     borderWidth: 1,
     borderColor: "#D4AF37",
   },
-
   jogoItemImg: { width: 45, height: 45, borderRadius: 6 },
-
+  jogoItemImgPlaceholder: {
+    width: 45,
+    height: 45,
+    borderRadius: 6,
+    backgroundColor: "#2A2A2A",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   jogoItemNome: { color: "#FFF", fontSize: 14, flex: 1 },
-
   favBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -577,13 +599,6 @@ const estilos = StyleSheet.create({
     paddingVertical: 2,
     gap: 3,
   },
-
   favBadgeTxt: { color: "#FFF", fontSize: 11 },
-
-  footer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
 });

@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ImageBackground,
@@ -23,6 +24,7 @@ export default function Notificacoes() {
   const router = useRouter();
 
   const [notificacoes, setNotificacoes] = useState<any[]>([]);
+  const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
     carregarNotificacoes();
@@ -30,26 +32,35 @@ export default function Notificacoes() {
 
   const carregarNotificacoes = async () => {
     try {
+      setCarregando(true);
       const res = await api.get("/notificacoes");
       const lista = res.data;
 
+      // Para cada notificação do tipo amizade, busca os dados do solicitante
       const enriquecidas = await Promise.all(
         lista.map(async (n: any) => {
-          if (n.tipo === "SOLICITACAO_AMIZADE" && n.referenciaId && !n.lida) {
+          if (n.tipo === "SOLICITACAO_AMIZADE" && n.referenciaId) {
             try {
-              const amz = await api.get(`/amizades/${n.referenciaId}`);
-              return { ...n, solicitante: amz.data.solicitante };
-            } catch {
-              return n;
+              // Busca a amizade para obter o solicitante
+              const amzRes = await api.get(`/amizades/${n.referenciaId}`);
+              const amizade = amzRes.data;
+              // O backend deve retornar o objeto Amizade com solicitante e destinatario populados
+              const solicitante = amizade.solicitante;
+              return { ...n, solicitante };
+            } catch (error) {
+              console.log("Erro ao buscar solicitante:", error);
+              return { ...n, solicitante: null };
             }
           }
           return n;
-        })
+        }),
       );
 
       setNotificacoes(enriquecidas);
-    } catch {
+    } catch (error) {
       Alert.alert("Erro", "Não foi possível carregar as notificações.");
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -84,61 +95,81 @@ export default function Notificacoes() {
     }
   };
 
+  if (carregando) {
+    return (
+      <ImageBackground
+        source={require("../assets/fundo1.png")}
+        style={estilos.fundo}
+      >
+        <View style={estilos.overlay} />
+        <View style={[estilos.header, { paddingTop: insets.top + 10 }]}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
+          </TouchableOpacity>
+          <Text style={estilos.headerTitulo}>NOTIFICAÇÕES</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={estilos.centralizar}>
+          <ActivityIndicator size="large" color="#D4AF37" />
+        </View>
+      </ImageBackground>
+    );
+  }
+
   return (
     <ImageBackground
       source={require("../assets/fundo1.png")}
       style={estilos.fundo}
     >
       <View style={estilos.overlay} />
-
       <StatusBar barStyle="light-content" />
 
-      <View
-        style={[
-          estilos.header,
-          { paddingTop: insets.top + 10 },
-        ]}
-      >
+      <View style={[estilos.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons
-            name="arrow-back"
-            size={24}
-            color="#E8D5A3"
-          />
+          <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
         </TouchableOpacity>
-
-        <Text style={estilos.headerTitulo}>
-          NOTIFICAÇÕES
-        </Text>
-
+        <Text style={estilos.headerTitulo}>NOTIFICAÇÕES</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={estilos.container}>
         {notificacoes.length > 0 ? (
           notificacoes.map((item) => {
-            const isSolicitacao = item.tipo === "SOLICITACAO_AMIZADE" && !item.lida;
+            const isSolicitacao = item.tipo === "SOLICITACAO_AMIZADE";
+            // Dados do solicitante (se existir)
+            const solicitante = item.solicitante;
+            const nomeSolicitante = solicitante?.nick || "Usuário";
+            const fotoSolicitante = solicitante?.fotoPerfil || null;
+
             return (
-              <View key={item.id} style={[estilos.cardNotificacao, item.lida && { opacity: 0.5 }]}>
+              <View
+                key={item.id}
+                style={[estilos.cardNotificacao, item.lida && estilos.cardLida]}
+              >
                 <View style={estilos.infoUsuario}>
                   <View style={estilos.avatar}>
-                    {item.solicitante?.fotoPerfil ? (
-                      <Image source={{ uri: item.solicitante.fotoPerfil }} style={estilos.imgAvatar} />
+                    {fotoSolicitante ? (
+                      <Image
+                        source={{ uri: fotoSolicitante }}
+                        style={estilos.imgAvatar}
+                      />
                     ) : (
                       <Ionicons name="person" size={24} color="#FFF" />
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={estilos.nick} numberOfLines={1}>
-                      {item.solicitante?.nick || "Usuário"}
+                      {nomeSolicitante}
                     </Text>
                     <Text style={estilos.subtitulo}>
-                      {isSolicitacao ? "Enviou um convite de amizade" : item.mensagem}
+                      {isSolicitacao
+                        ? "Enviou um convite de amizade"
+                        : item.mensagem || "Notificação"}
                     </Text>
                   </View>
                 </View>
 
-                {isSolicitacao && (
+                {isSolicitacao && !item.lida && (
                   <View style={estilos.acoes}>
                     <TouchableOpacity
                       style={estilos.btnAceitar}
@@ -167,9 +198,7 @@ export default function Notificacoes() {
             );
           })
         ) : (
-          <Text style={estilos.msgVazia}>
-            Nenhuma notificação nova.
-          </Text>
+          <Text style={estilos.msgVazia}>Nenhuma notificação nova.</Text>
         )}
       </ScrollView>
 
@@ -181,15 +210,11 @@ export default function Notificacoes() {
 }
 
 const estilos = StyleSheet.create({
-  fundo: {
-    flex: 1,
+  fundo: { flex: 1 },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.55)",
   },
-
-overlay: {
-  ...StyleSheet.absoluteFillObject,
-  backgroundColor: "rgba(0,0,0,0.55)",
-},
-
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -197,18 +222,20 @@ overlay: {
     paddingHorizontal: 20,
     marginBottom: 20,
   },
-
   headerTitulo: {
     color: "#E8D5A3",
     fontSize: 18,
     fontWeight: "bold",
   },
-
   container: {
     paddingHorizontal: 20,
     paddingBottom: 120,
   },
-
+  centralizar: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   cardNotificacao: {
     flexDirection: "row",
     backgroundColor: "#1A1A1A",
@@ -221,14 +248,15 @@ overlay: {
     borderColor: "#333",
     gap: 10,
   },
-
+  cardLida: {
+    opacity: 0.6,
+  },
   infoUsuario: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     flex: 1,
   },
-
   avatar: {
     width: 50,
     height: 50,
@@ -240,53 +268,44 @@ overlay: {
     borderWidth: 1,
     borderColor: "#E8D5A3",
   },
-
   imgAvatar: {
     width: "100%",
     height: "100%",
   },
-
   nick: {
     color: "#FFF",
     fontWeight: "bold",
     fontSize: 16,
   },
-
   subtitulo: {
     color: "#999",
     fontSize: 12,
   },
-
   acoes: {
     flexDirection: "row",
     gap: 10,
   },
-
   btnAceitar: {
     backgroundColor: "#E8D5A3",
     padding: 8,
     borderRadius: 20,
   },
-
   btnRecusar: {
     backgroundColor: "#444",
     padding: 8,
     borderRadius: 20,
   },
-
   btnDeletar: {
     backgroundColor: "#B00020",
     padding: 8,
     borderRadius: 20,
   },
-
   msgVazia: {
     color: "#666",
     textAlign: "center",
     marginTop: 50,
     fontStyle: "italic",
   },
-
   footer: {
     position: "absolute",
     bottom: 0,

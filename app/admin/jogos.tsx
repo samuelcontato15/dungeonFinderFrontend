@@ -1,102 +1,139 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
+  ActivityIndicator,
   Alert,
+  FlatList,
+  Image,
+  StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
 
 export default function Jogos() {
   const { user } = useAuth();
 
   const [jogos, setJogos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const [nome, setNome] = useState("");
   const [slug, setSlug] = useState("");
-  const [capa, setCapa] = useState("");
+  const [capa, setCapa] = useState(""); // pode ser URL ou base64
+  const [editandoId, setEditandoId] = useState<string | null>(null);
 
   async function carregarJogos() {
     try {
       const response = await api.get("/jogos");
-
       setJogos(response.data);
     } catch {
       Alert.alert("Erro", "Erro ao carregar jogos");
     }
   }
 
-  async function criarJogo() {
-    try {
-      await api.post(
-        "/jogos",
-        {
-          nome,
-          slug,
-          capa,
-        },
-        {
-          headers: {
-            "X-Usuario-Id": user?.id,
-          },
-        }
-      );
+  function limparFormulario() {
+    setNome("");
+    setSlug("");
+    setCapa("");
+    setEditandoId(null);
+  }
 
-      Alert.alert("Sucesso", "Jogo criado");
-
-      setNome("");
-      setSlug("");
-      setCapa("");
-
-      carregarJogos();
-    } catch {
-      Alert.alert("Erro", "Erro ao criar jogo");
+  async function salvarJogo() {
+    if (!nome.trim() || !slug.trim()) {
+      Alert.alert("Atenção", "Nome e slug são obrigatórios");
+      return;
     }
+
+    setLoading(true);
+    try {
+      if (editandoId) {
+        await api.put(
+          `/jogos/${editandoId}`,
+          { nome, slug, capa },
+          { headers: { "X-Usuario-Id": user?.id } },
+        );
+        Alert.alert("Sucesso", "Jogo atualizado");
+      } else {
+        await api.post(
+          "/jogos",
+          { nome, slug, capa },
+          { headers: { "X-Usuario-Id": user?.id } },
+        );
+        Alert.alert("Sucesso", "Jogo criado");
+      }
+      limparFormulario();
+      carregarJogos();
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Erro ao salvar jogo";
+      Alert.alert("Erro", msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function iniciarEdicao(item: any) {
+    setNome(item.nome);
+    setSlug(item.slug);
+    setCapa(item.capa || "");
+    setEditandoId(item.id);
   }
 
   async function deletarJogo(id: string) {
-    try {
-      await api.delete(`/jogos/${id}`, {
-        headers: {
-          "X-Usuario-Id": user?.id,
+    Alert.alert("Confirmar", "Tem certeza que deseja deletar este jogo?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Deletar",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await api.delete(`/jogos/${id}`, {
+              headers: { "X-Usuario-Id": user?.id },
+            });
+            Alert.alert("Sucesso", "Jogo removido");
+            carregarJogos();
+            if (editandoId === id) limparFormulario();
+          } catch {
+            Alert.alert("Erro", "Erro ao deletar");
+          }
         },
-      });
+      },
+    ]);
+  }
 
-      carregarJogos();
+  // Função para escolher imagem da galeria (igual ao perfil)
+  async function escolherImagem() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permissão necessária",
+        "Permita o acesso à galeria para escolher a capa.",
+      );
+      return;
+    }
 
-      Alert.alert("Sucesso", "Jogo removido");
-    } catch {
-      Alert.alert("Erro", "Erro ao deletar");
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsEditing: true,
+      aspect: [16, 9], // proporção de capa de jogo
+      quality: 0.6,
+      base64: true,
+    });
+
+    if (!result.canceled) {
+      const img = result.assets[0];
+      const base64String = img.base64
+        ? `data:image/jpeg;base64,${img.base64}`
+        : img.uri;
+      setCapa(base64String);
     }
   }
 
-  async function editarJogo(id: string) {
-    try {
-      await api.put(
-        `/jogos/${id}`,
-        {
-          nome: nome,
-          slug: slug,
-          capa: capa,
-        },
-        {
-          headers: {
-            "X-Usuario-Id": user?.id,
-          },
-        }
-      );
-
-      Alert.alert("Sucesso", "Jogo atualizado");
-
-      carregarJogos();
-    } catch {
-      Alert.alert("Erro", "Erro ao editar");
-    }
+  function removerCapa() {
+    setCapa("");
   }
 
   useEffect(() => {
@@ -105,79 +142,128 @@ export default function Jogos() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>
-        Jogos
-      </Text>
+      <Text style={styles.title}>Gerenciar Jogos</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nome"
-        placeholderTextColor="#999"
-        value={nome}
-        onChangeText={setNome}
-      />
+      {/* Formulário */}
+      <View style={styles.formCard}>
+        <TextInput
+          style={styles.input}
+          placeholder="Nome do jogo *"
+          placeholderTextColor="#999"
+          value={nome}
+          onChangeText={setNome}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Slug (identificador único) *"
+          placeholderTextColor="#999"
+          value={slug}
+          onChangeText={setSlug}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Slug"
-        placeholderTextColor="#999"
-        value={slug}
-        onChangeText={setSlug}
-      />
+        {/* Campo de capa com preview e botões */}
+        <Text style={styles.labelCapa}>Capa do jogo</Text>
+        {capa ? (
+          <View style={styles.previewContainer}>
+            <Image source={{ uri: capa }} style={styles.previewCapa} />
+            <View style={styles.botoesCapa}>
+              <TouchableOpacity
+                style={styles.botaoEscolherCapa}
+                onPress={escolherImagem}
+              >
+                <Ionicons name="image-outline" size={16} color="#FFF" />
+                <Text style={styles.botaoEscolherCapaTxt}>Trocar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.botaoRemoverCapa}
+                onPress={removerCapa}
+              >
+                <Ionicons name="trash-outline" size={16} color="#FFF" />
+                <Text style={styles.botaoRemoverCapaTxt}>Remover</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.botaoSelecionarCapa}
+            onPress={escolherImagem}
+          >
+            <Ionicons name="cloud-upload-outline" size={20} color="#D4AF37" />
+            <Text style={styles.botaoSelecionarCapaTxt}>
+              Escolher imagem da galeria
+            </Text>
+          </TouchableOpacity>
+        )}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Capa"
-        placeholderTextColor="#999"
-        value={capa}
-        onChangeText={setCapa}
-      />
+        {/* Campo opcional para URL manual */}
+        <TextInput
+          style={[styles.input, styles.inputUrl]}
+          placeholder="Ou insira URL da capa (opcional)"
+          placeholderTextColor="#888"
+          value={capa}
+          onChangeText={setCapa}
+        />
 
-      <TouchableOpacity
-        style={styles.botaoCriar}
-        onPress={criarJogo}
-      >
-        <Text style={styles.botaoTxt}>
-          Criar jogo
-        </Text>
-      </TouchableOpacity>
+        <View style={styles.formButtons}>
+          <TouchableOpacity
+            style={styles.botaoSalvar}
+            onPress={salvarJogo}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <Text style={styles.botaoTxt}>
+                {editandoId ? "Atualizar Jogo" : "Criar Jogo"}
+              </Text>
+            )}
+          </TouchableOpacity>
 
+          {editandoId && (
+            <TouchableOpacity
+              style={styles.botaoCancelar}
+              onPress={limparFormulario}
+            >
+              <Text style={styles.botaoTxt}>Cancelar</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Lista de jogos */}
       <FlatList
         data={jogos}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View>
-              <Text style={styles.nome}>
-                {item.nome}
-              </Text>
-
-              <Text style={styles.slug}>
-                {item.slug}
-              </Text>
+            {item.capa ? (
+              <Image source={{ uri: item.capa }} style={styles.cardCapa} />
+            ) : (
+              <View style={styles.cardCapaPlaceholder}>
+                <Ionicons name="game-controller" size={24} color="#555" />
+              </View>
+            )}
+            <View style={styles.cardInfo}>
+              <Text style={styles.nome}>{item.nome}</Text>
+              <Text style={styles.slug}>slug: {item.slug}</Text>
             </View>
-
-            <View style={{ gap: 10 }}>
+            <View style={styles.cardActions}>
               <TouchableOpacity
                 style={styles.editar}
-                onPress={() => editarJogo(item.id)}
+                onPress={() => iniciarEdicao(item)}
               >
-                <Text style={styles.botaoTxt}>
-                  Editar
-                </Text>
+                <Text style={styles.botaoTxt}>Editar</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.deletar}
                 onPress={() => deletarJogo(item.id)}
               >
-                <Text style={styles.botaoTxt}>
-                  Deletar
-                </Text>
+                <Text style={styles.botaoTxt}>Deletar</Text>
               </TouchableOpacity>
             </View>
           </View>
         )}
+        contentContainerStyle={{ paddingBottom: 20 }}
       />
     </View>
   );
@@ -189,65 +275,179 @@ const styles = StyleSheet.create({
     backgroundColor: "#111",
     padding: 20,
   },
-
   title: {
     color: "#D4AF37",
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: "bold",
     marginTop: 40,
     marginBottom: 20,
+    textAlign: "center",
   },
-
-  input: {
+  formCard: {
     backgroundColor: "#1E1E1E",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#333",
+  },
+  input: {
+    backgroundColor: "#2A2A2A",
     color: "#FFF",
     borderRadius: 10,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 12,
+    fontSize: 16,
   },
-
-  botaoCriar: {
-    backgroundColor: "#D4AF37",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
+  inputUrl: {
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#333",
   },
-
-  card: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  nome: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  slug: {
-    color: "#AAA",
+  labelCapa: {
+    color: "#CCC",
+    fontSize: 14,
+    marginBottom: 6,
     marginTop: 4,
   },
-
-  editar: {
+  botaoSelecionarCapa: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2A2A2A",
+    borderRadius: 10,
+    paddingVertical: 12,
+    marginBottom: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#D4AF37",
+    borderStyle: "dashed",
+  },
+  botaoSelecionarCapaTxt: {
+    color: "#D4AF37",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  previewContainer: {
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  previewCapa: {
+    width: "100%",
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: "#000",
+    resizeMode: "cover",
+  },
+  botoesCapa: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  botaoEscolherCapa: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#1565C0",
-    padding: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    gap: 6,
   },
-
-  deletar: {
+  botaoEscolherCapaTxt: {
+    color: "#FFF",
+    fontSize: 12,
+  },
+  botaoRemoverCapa: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#B00020",
-    padding: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 8,
+    gap: 6,
   },
-
+  botaoRemoverCapaTxt: {
+    color: "#FFF",
+    fontSize: 12,
+  },
+  formButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  botaoSalvar: {
+    flex: 1,
+    backgroundColor: "#D4AF37",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  botaoCancelar: {
+    flex: 1,
+    backgroundColor: "#555",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
   botaoTxt: {
     color: "#FFF",
     fontWeight: "bold",
+    fontSize: 16,
+  },
+  card: {
+    backgroundColor: "#1E1E1E",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#2A2A2A",
+  },
+  cardCapa: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: "#000",
+  },
+  cardCapaPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: "#2A2A2A",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cardInfo: {
+    flex: 1,
+  },
+  nome: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  slug: {
+    color: "#AAA",
+    fontSize: 12,
+  },
+  cardActions: {
+    gap: 8,
+  },
+  editar: {
+    backgroundColor: "#1565C0",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: "center",
+  },
+  deletar: {
+    backgroundColor: "#B00020",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: "center",
   },
 });
