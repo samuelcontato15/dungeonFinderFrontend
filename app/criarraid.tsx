@@ -25,12 +25,22 @@ export default function CriarRaid() {
   const { jogoId } = useLocalSearchParams<{ jogoId: string }>();
   const { user } = useAuth();
 
-  const [nome, setNome]               = useState("");
-  const [descricao, setDescricao]     = useState("");
-  const [minJogadores, setMin]        = useState("2");
-  const [maxJogadores, setMax]        = useState("10");
-  const [inicioEm, setInicioEm]       = useState("");
-  const [carregando, setCarregando]   = useState(false);
+  const [nome, setNome] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [minJogadores, setMin] = useState("2");
+  const [maxJogadores, setMax] = useState("10");
+  const [inicioEm, setInicioEm] = useState("");
+  const [carregando, setCarregando] = useState(false);
+
+  // Formata automaticamente DD/MM enquanto digita
+  function formatarData(texto: string) {
+    let numeros = texto.replace(/\D/g, "");
+    if (numeros.length > 4) numeros = numeros.slice(0, 4);
+    if (numeros.length > 2) {
+      numeros = numeros.slice(0, 2) + "/" + numeros.slice(2);
+    }
+    setInicioEm(numeros);
+  }
 
   async function handleCriar() {
     if (!nome.trim()) {
@@ -38,7 +48,7 @@ export default function CriarRaid() {
       return;
     }
     if (!inicioEm.trim()) {
-      Alert.alert("Atenção", "Informe a data de início.");
+      Alert.alert("Atenção", "Informe a data de início (DD/MM).");
       return;
     }
     if (parseInt(minJogadores) > parseInt(maxJogadores)) {
@@ -49,10 +59,18 @@ export default function CriarRaid() {
       Alert.alert("Erro", "Usuário não identificado.");
       return;
     }
+
+    // Valida formato DD/MM
+    const partes = inicioEm.split("/");
+    if (partes.length !== 2 || partes[0].length !== 2 || partes[1].length !== 2) {
+      Alert.alert("Formato inválido", "Use DD/MM (ex: 25/12)");
+      return;
+    }
+
     try {
       setCarregando(true);
-      const [dia, mes, ano] = inicioEm.split("/");
-      const dataFormatada = `${ano}-${mes}-${dia}T20:00:00`;
+      const ano = new Date().getFullYear();
+      const dataFormatada = `${ano}-${partes[1]}-${partes[0]}T20:00:00`;
 
       await api.post(
         `/raids?jogoId=${jogoId}`,
@@ -97,35 +115,76 @@ export default function CriarRaid() {
 
           <View style={estilos.campo}>
             <Text style={estilos.label}>Nome da raid *</Text>
-            <TextInput style={estilos.input} placeholder="Ex: Den of Nalorakh" placeholderTextColor="#888" value={nome} onChangeText={setNome} />
+            <TextInput
+              style={estilos.input}
+              placeholder="Ex: Den of Nalorakh"
+              placeholderTextColor="#888"
+              value={nome}
+              onChangeText={setNome}
+            />
           </View>
 
           <View style={estilos.campo}>
             <Text style={estilos.label}>Descrição</Text>
-            <TextInput style={[estilos.input, { height: 90, textAlignVertical: "top" }]} placeholder="Descreva sua raid..." placeholderTextColor="#888" value={descricao} onChangeText={setDescricao} multiline />
+            <TextInput
+              style={[estilos.input, { height: 90, textAlignVertical: "top" }]}
+              placeholder="Descreva sua raid..."
+              placeholderTextColor="#888"
+              value={descricao}
+              onChangeText={setDescricao}
+              multiline
+            />
           </View>
 
           <View style={estilos.linha}>
             <View style={[estilos.campo, { flex: 1 }]}>
               <Text style={estilos.label}>Mín. jogadores *</Text>
-              <TextInput style={estilos.input} placeholder="2" placeholderTextColor="#888" value={minJogadores} onChangeText={setMin} keyboardType="numeric" />
+              <TextInput
+                style={estilos.input}
+                placeholder="2"
+                placeholderTextColor="#888"
+                value={minJogadores}
+                onChangeText={setMin}
+                keyboardType="numeric"
+              />
             </View>
             <View style={[estilos.campo, { flex: 1 }]}>
               <Text style={estilos.label}>Máx. jogadores *</Text>
-              <TextInput style={estilos.input} placeholder="10" placeholderTextColor="#888" value={maxJogadores} onChangeText={setMax} keyboardType="numeric" />
+              <TextInput
+                style={estilos.input}
+                placeholder="10"
+                placeholderTextColor="#888"
+                value={maxJogadores}
+                onChangeText={setMax}
+                keyboardType="numeric"
+              />
             </View>
           </View>
 
           <View style={estilos.campo}>
-            <Text style={estilos.label}>Data de início * (DD/MM/AAAA)</Text>
-            <TextInput style={estilos.input} placeholder="Ex: 25/12/2025" placeholderTextColor="#888" value={inicioEm} onChangeText={setInicioEm} keyboardType="numeric" />
+            <Text style={estilos.label}>Data de início * (DD/MM)</Text>
+            <TextInput
+              style={estilos.input}
+              placeholder="Ex: 25/12"
+              placeholderTextColor="#888"
+              value={inicioEm}
+              onChangeText={formatarData}
+              keyboardType="numeric"
+              maxLength={5}
+            />
           </View>
 
-          <TouchableOpacity style={[estilos.btnCriar, carregando && { opacity: 0.7 }]} onPress={handleCriar} disabled={carregando} activeOpacity={0.8}>
-            {carregando
-              ? <ActivityIndicator color="#1a1008" />
-              : <Text style={estilos.btnCriarTexto}>Criar Raid</Text>
-            }
+          <TouchableOpacity
+            style={[estilos.btnCriar, carregando && { opacity: 0.7 }]}
+            onPress={handleCriar}
+            disabled={carregando}
+            activeOpacity={0.8}
+          >
+            {carregando ? (
+              <ActivityIndicator color="#1a1008" />
+            ) : (
+              <Text style={estilos.btnCriarTexto}>Criar Raid</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -134,16 +193,16 @@ export default function CriarRaid() {
 }
 
 const estilos = StyleSheet.create({
-  fundo:   { flex: 1 },
+  fundo: { flex: 1 },
   overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.65)" },
-  scroll:  { paddingHorizontal: 24, gap: 16 },
+  scroll: { paddingHorizontal: 24, gap: 16 },
   btnVoltar: { flexDirection: "row", alignItems: "center", gap: 6, alignSelf: "flex-start" },
   btnVoltarTexto: { color: "#D4AF37", fontSize: 14 },
-  titulo:  { color: "#E8D5A3", fontSize: 26, fontWeight: "900", letterSpacing: 2 },
-  campo:   { gap: 6 },
-  label:   { color: "#E8D5A3", fontSize: 13, fontWeight: "600" },
-  input:   { backgroundColor: "rgba(232,213,163,0.85)", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: "#1a1008" },
-  linha:   { flexDirection: "row", gap: 12 },
+  titulo: { color: "#E8D5A3", fontSize: 26, fontWeight: "900", letterSpacing: 2 },
+  campo: { gap: 6 },
+  label: { color: "#E8D5A3", fontSize: 13, fontWeight: "600" },
+  input: { backgroundColor: "rgba(232,213,163,0.85)", borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: "#1a1008" },
+  linha: { flexDirection: "row", gap: 12 },
   btnCriar: { backgroundColor: "#D4AF37", paddingVertical: 15, borderRadius: 8, alignItems: "center", marginTop: 8 },
   btnCriarTexto: { color: "#1a1008", fontSize: 15, fontWeight: "700", letterSpacing: 1 },
 });

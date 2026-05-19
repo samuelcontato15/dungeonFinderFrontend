@@ -1,20 +1,21 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
- ScrollView,
-  StyleSheet,
-  StatusBar,
-  ImageBackground,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-} from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+
 import BarraNavegacao from "@/components/BarraNavegacao";
 import api from "@/services/api";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ImageBackground,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Evento {
   id: string;
@@ -46,16 +47,6 @@ interface Jogo {
   capa: string | null;
 }
 
-const ASSETS_LOCAIS: Record<string, any> = {
-  wow: require("../assets/wow.png"),
-  albion: require("../assets/ALBIONONLINE.png"),
-  elder: require("../assets/elder.png"),
-  dagger: require("../assets/dagger.png"),
-  ded: require("../assets/DeD.png"),
-  rpgcellbit: require("../assets/rpgdocellbit.png"),
-  tormenta: require("../assets/tormenta.png"),
-};
-
 export default function Home() {
   const margens = useSafeAreaInsets();
   const router = useRouter();
@@ -76,15 +67,12 @@ export default function Home() {
   async function carregarDados() {
     try {
       setCarregando(true);
-
-      const [jogoRes, eventosRes, raidsRes, guildasRes] =
-        await Promise.all([
-          api.get(`/jogos/${jogoId}`),
-          api.get(`/eventos/jogo/${jogoId}`),
-          api.get(`/raids/jogo/${jogoId}`),
-          api.get(`/guildas/jogo/${jogoId}`),
-        ]);
-
+      const [jogoRes, eventosRes, raidsRes, guildasRes] = await Promise.all([
+        api.get(`/jogos/${jogoId}`),
+        api.get(`/eventos/jogo/${jogoId}`),
+        api.get(`/raids/jogo/${jogoId}`),
+        api.get(`/guildas/jogo/${jogoId}`),
+      ]);
       setJogo(jogoRes.data);
       setEventos(eventosRes.data || []);
       setRaids(raidsRes.data || []);
@@ -100,46 +88,6 @@ export default function Home() {
     return new Date(data).toLocaleDateString("pt-BR");
   }
 
-  function resolverBanner() {
-    if (!jogo) return ASSETS_LOCAIS.wow;
-
-    const nome = jogo.nome?.toLowerCase() ?? "";
-
-    if (nome.includes("warcraft") || nome.includes("wow")) {
-      return ASSETS_LOCAIS.wow;
-    }
-
-    if (nome.includes("albion")) {
-      return ASSETS_LOCAIS.albion;
-    }
-
-    if (nome.includes("elder")) {
-      return ASSETS_LOCAIS.elder;
-    }
-
-    if (nome.includes("dagger")) {
-      return ASSETS_LOCAIS.dagger;
-    }
-
-    if (nome.includes("dungeon")) {
-      return ASSETS_LOCAIS.ded;
-    }
-
-    if (nome.includes("cellbit")) {
-      return ASSETS_LOCAIS.rpgcellbit;
-    }
-
-    if (nome.includes("tormenta")) {
-      return ASSETS_LOCAIS.tormenta;
-    }
-
-    if (jogo.capa) {
-      return { uri: jogo.capa };
-    }
-
-    return ASSETS_LOCAIS.wow;
-  }
-
   if (carregando) {
     return (
       <ImageBackground
@@ -148,11 +96,9 @@ export default function Home() {
         resizeMode="cover"
       >
         <View style={estilos.overlay} />
-
-        <View style={estilos.loadingContainer}>
+        <View style={estilos.centralizar}>
           <ActivityIndicator size="large" color="#D4AF37" />
         </View>
-
         <BarraNavegacao />
       </ImageBackground>
     );
@@ -170,368 +116,289 @@ export default function Home() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingTop: margens.top + 10,
+          paddingTop: margens.top,
           paddingBottom: 110,
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* BANNER */}
-        <Image
-          source={resolverBanner()}
-          style={estilos.banner}
-          resizeMode="cover"
-        />
+        {/* CAPA DO JOGO */}
+        {jogo?.capa ? (
+          <Image source={{ uri: jogo.capa }} style={estilos.banner} resizeMode="cover" />
+        ) : (
+          <View style={estilos.bannerPlaceholder}>
+            <Ionicons name="game-controller-outline" size={48} color="#D4AF37" />
+            <Text style={estilos.bannerPlaceholderText}>{jogo?.nome || "Jogo"}</Text>
+          </View>
+        )}
 
         <View style={estilos.container}>
           {/* EVENTOS */}
           <Text style={estilos.tituloSecao}>EVENTOS</Text>
-        
           {eventos.length === 0 ? (
-            <Text style={estilos.textoVazio}>
-              Nenhum evento disponível.
-            </Text>
+            <Text style={estilos.textoVazio}>Nenhum evento disponível.</Text>
           ) : (
             eventos.map((evento) => (
               <View key={evento.id} style={estilos.cardEvento}>
-                <Text style={estilos.tituloEvento}>
-                  {evento.nome}
-                </Text>
-
+                <Text style={estilos.tituloEvento}>{evento.nome}</Text>
                 <View style={estilos.cardConteudo}>
                   {evento.banner ? (
-                    <Image
-                      source={{ uri: evento.banner }}
-                      style={estilos.imagemEvento}
-                      resizeMode="cover"
-                    />
+                    <Image source={{ uri: evento.banner }} style={estilos.imagemEvento} />
                   ) : (
                     <View style={estilos.semImagem}>
-                      <Ionicons
-                        name="image-outline"
-                        size={28}
-                        color="#D4AF37"
-                      />
+                      <Ionicons name="image-outline" size={28} color="#D4AF37" />
                     </View>
                   )}
-
-                  <Text style={estilos.descricaoEvento}>
-                    {evento.descricao}
-                  </Text>
+                  <Text style={estilos.descricaoEvento}>{evento.descricao}</Text>
                 </View>
-
-                <Text style={estilos.dataEvento}>
-                  Duração: até {formatarData(evento.fimEm)}
-                </Text>
+                <Text style={estilos.dataEvento}>Duração: até {formatarData(evento.fimEm)}</Text>
               </View>
             ))
           )}
           <View style={estilos.divisor} />
 
-
           {/* RAIDS */}
-          <Text style={estilos.tituloSecao}>RAIDS</Text>
-
-          <TouchableOpacity
-            style={estilos.botaoCriarRaid}
-            onPress={() =>
-              router.push({
-                pathname: "/criarraid",
-                params: { jogoId },
-              } as any)
-            }
-          >
-            <Ionicons name="add" size={28} color="#1a1008" />
-          </TouchableOpacity>
+          <View style={estilos.headerRaids}>
+            <Text style={estilos.tituloSecao}>RAIDS</Text>
+            <TouchableOpacity
+              style={estilos.botaoCriarRaid}
+              onPress={() => router.push({ pathname: "/criarraid", params: { jogoId } } as any)}
+            >
+              <Ionicons name="add" size={24} color="#1a1008" />
+            </TouchableOpacity>
+          </View>
 
           {raids.length === 0 ? (
-            <Text style={estilos.textoVazio}>
-              Nenhuma raid criada.
-            </Text>
+            <Text style={estilos.textoVazio}>Nenhuma raid criada.</Text>
           ) : (
             raids.map((raid) => (
               <View key={raid.id} style={estilos.cardRaid}>
-                <Text style={estilos.nomeRaid}>
-                  {raid.nome}
-                </Text>
-
+                <Text style={estilos.nomeRaid}>{raid.nome}</Text>
                 <Text style={estilos.infoRaid}>
-                  Nível mínimo: {raid.minJogadores} ·{" "}
-                  {formatarData(raid.inicioEm)}
+                  Jogadores: {raid.minJogadores} - {raid.maxJogadores} · {formatarData(raid.inicioEm)}
                 </Text>
-
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{
-                    gap: 12,
-                    paddingTop: 10,
-                  }}
-                >
-                  {Array.from({
-                    length: Math.min(raid.maxJogadores, 5),
-                  }).map((_, index) => (
+                {raid.descricao && <Text style={estilos.descricaoRaid}>{raid.descricao}</Text>}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.membrosContainer}>
+                  {Array.from({ length: Math.min(raid.maxJogadores, 5) }).map((_, index) => (
                     <View key={index} style={estilos.membroContainer}>
                       <View style={estilos.avatar}>
-                        <Ionicons
-                          name="person"
-                          size={20}
-                          color="#999"
-                        />
+                        <Ionicons name="person" size={20} color="#999" />
                       </View>
-
-                      <Text style={estilos.nomeMembro}>
-                        membro
-                      </Text>
+                      <Text style={estilos.nomeMembro}>membro</Text>
                     </View>
                   ))}
                 </ScrollView>
               </View>
             ))
           )}
-<View style={estilos.divisor} />
+          <View style={estilos.divisor} />
 
-          {/* GUILDAS */}
-          <Text style={[estilos.tituloSecao, { marginTop: 24 }]}>
-            PERSONAGENS DA COMUNIDADE
-          </Text>
-
+          {/* PERSONAGENS DA COMUNIDADE (GUILDAS) */}
+          <Text style={[estilos.tituloSecao, { marginTop: 8 }]}>PERSONAGENS DA COMUNIDADE</Text>
           {guildas.length === 0 ? (
-            <Text style={estilos.textoVazio}>
-              Nenhuma guilda encontrada.
-            </Text>
+            <Text style={estilos.textoVazio}>Nenhum personagem encontrado.</Text>
           ) : (
             guildas.map((guilda) => (
               <View key={guilda.id} style={estilos.cardGuilda}>
                 {guilda.banner ? (
-                  <Image
-                    source={{ uri: guilda.banner }}
-                    style={estilos.imagemGuilda}
-                  />
+                  <Image source={{ uri: guilda.banner }} style={estilos.imagemGuilda} />
                 ) : (
-                  <Image
-                    source={resolverBanner()}
-                    style={estilos.imagemGuilda}
-                  />
+                  <View style={estilos.imagemGuildaPlaceholder}>
+                    <Ionicons name="people-outline" size={28} color="#D4AF37" />
+                  </View>
                 )}
-
-                <View style={{ flex: 1 }}>
-                  <Text style={estilos.nomeGuilda}>
-                    {guilda.nome}
-                  </Text>
-
-                  <Text
-                    style={estilos.descricaoGuilda}
-                    numberOfLines={2}
-                  >
+                <View style={estilos.guildaInfo}>
+                  <Text style={estilos.nomeGuilda}>{guilda.nome}</Text>
+                  <Text style={estilos.descricaoGuilda} numberOfLines={2}>
                     {guilda.descricao}
                   </Text>
                 </View>
-
-                <Ionicons
-                  name="thumbs-up"
-                  size={28}
-                  color="#49d15c"
-                />
+                <Ionicons name="thumbs-up" size={24} color="#49d15c" />
               </View>
             ))
           )}
         </View>
       </ScrollView>
-
       <BarraNavegacao />
     </ImageBackground>
   );
 }
+
 const estilos = StyleSheet.create({
-  fundo: {
-    flex: 1,
+  fundo: { flex: 1 },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.65)" },
+  centralizar: { flex: 1, justifyContent: "center", alignItems: "center" },
+  banner: {
+    width: "100%",
+    height: 180,
   },
-
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
-  },
-
-  loadingContainer: {
-    flex: 1,
+  bannerPlaceholder: {
+    width: "100%",
+    height: 180,
+    backgroundColor: "#1a1a1a",
     justifyContent: "center",
     alignItems: "center",
   },
-
-  banner: {
-    width: "100%",
-    height: 120,
+  bannerPlaceholderText: {
+    color: "#D4AF37",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 8,
   },
-
   container: {
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 100,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-
   tituloSecao: {
-    color: "#fff",
-    fontSize: 22,
-    fontWeight: "900",
-    marginBottom: 14,
+    color: "#FFF",
+    fontSize: 20,
+    fontWeight: "bold",
     letterSpacing: 1,
-    textAlign: "left",
+    marginBottom: 12,
   },
-
+  headerRaids: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  botaoCriarRaid: {
+    backgroundColor: "#D4AF37",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   divisor: {
     height: 1,
-    width: "100%",
-    backgroundColor: "rgba(255,255,255,0.14)",
-    marginVertical: 18,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    marginVertical: 20,
   },
-
   textoVazio: {
-    color: "#888",
-    fontSize: 13,
+    color: "#AAA",
+    fontSize: 14,
     fontStyle: "italic",
-    marginBottom: 20,
-    textAlign: "left",
+    marginBottom: 16,
   },
-
   cardEvento: {
     marginBottom: 20,
-    paddingBottom: 18,
+    paddingBottom: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
-
   tituloEvento: {
-    color: "#fff",
+    color: "#FFF",
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "bold",
     marginBottom: 8,
-    textAlign: "left",
   },
-
   cardConteudo: {
     flexDirection: "row",
     gap: 12,
-    alignItems: "flex-start",
   },
-
   imagemEvento: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 80,
     borderRadius: 8,
   },
-
   semImagem: {
-    width: 90,
-    height: 90,
+    width: 80,
+    height: 80,
     borderRadius: 8,
-    backgroundColor: "#2a1a08",
+    backgroundColor: "#2a2a2a",
     justifyContent: "center",
     alignItems: "center",
   },
-
   descricaoEvento: {
     flex: 1,
-    color: "#ddd",
-    fontSize: 12,
+    color: "#DDD",
+    fontSize: 13,
     lineHeight: 18,
-    textAlign: "left",
   },
-
   dataEvento: {
-    color: "#fff",
-    marginTop: 10,
-    fontSize: 13,
-    textAlign: "left",
+    color: "#D4AF37",
+    fontSize: 12,
+    marginTop: 8,
   },
-
-  botaoCriarRaid: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: "#D4AF37",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 22,
-    alignSelf: "flex-start",
-  },
-
   cardRaid: {
-    marginBottom: 22,
-    paddingBottom: 18,
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
-
   nomeRaid: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 4,
-    textAlign: "left",
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
   },
-
   infoRaid: {
-    color: "#aaa",
-    marginTop: 2,
-    marginBottom: 14,
+    color: "#CCC",
     fontSize: 13,
-    textAlign: "left",
+    marginTop: 2,
   },
-
-  membrosRaid: {
+  descricaoRaid: {
+    color: "#AAA",
+    fontSize: 12,
+    marginTop: 4,
+  },
+  membrosContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 12,
+    paddingTop: 12,
   },
-
   membroContainer: {
     alignItems: "center",
-    width: 65,
+    width: 60,
   },
-
   avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#2a2a2a",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
-
   nomeMembro: {
-    color: "#ddd",
+    color: "#BBB",
     fontSize: 11,
-    marginTop: 5,
+    marginTop: 4,
     textAlign: "center",
   },
-
   cardGuilda: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
     gap: 12,
-    marginBottom: 18,
   },
-
   imagemGuilda: {
-    width: 80,
-    height: 80,
-    borderRadius: 10,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
-
+  imagemGuildaPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#2a2a2a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   guildaInfo: {
     flex: 1,
   },
-
   nomeGuilda: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-    marginBottom: 6,
-    textAlign: "left",
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
-
   descricaoGuilda: {
-    color: "#bbb",
+    color: "#CCC",
     fontSize: 12,
-    lineHeight: 18,
-    textAlign: "left",
+    marginTop: 2,
   },
 });

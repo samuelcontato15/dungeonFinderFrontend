@@ -33,21 +33,34 @@ export default function Perfil() {
   const [salvando, setSalvando] = useState(false);
   const [temAlteracoes, setTemAlteracoes] = useState(false);
 
-  // Favoritos: lista de IDs dos jogos favoritos
-  const [favoritos, setFavoritos] = useState<string[]>([]);
-  const [jogos, setJogos] = useState<any[]>([]); // lista de todos os jogos
+  // Favoritos
+  const [favoritos, setFavoritos] = useState<any[]>([]); // guarda o objeto Jogo completo
+  const [jogos, setJogos] = useState<any[]>([]);
   const [editandoFavoritos, setEditandoFavoritos] = useState(false);
   const [salvandoFavorito, setSalvandoFavorito] = useState<string | null>(null);
+  const [carregandoFavoritos, setCarregandoFavoritos] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
-      carregarPerfil();
-      carregarFavoritos();
-      carregarJogos();
-    }, [user?.id]),
+      carregarTudo();
+    }, [user?.id])
   );
 
-  const carregarPerfil = async () => {
+  async function carregarTudo() {
+    if (!user?.id) return;
+    try {
+      await Promise.all([
+        carregarPerfil(),
+        carregarJogos(),
+        carregarFavoritos(),
+      ]);
+    } catch (error) {
+      console.log("Erro ao carregar dados:", error);
+      Alert.alert("Erro", "Não foi possível carregar os dados.");
+    }
+  }
+
+  async function carregarPerfil() {
     if (!user?.id) return;
     try {
       const [amigosRes, perfilRes] = await Promise.all([
@@ -58,7 +71,7 @@ export default function Perfil() {
       const listaFormatada = amigosRes.data
         .filter((amz: any) => amz.status === "ACEITO")
         .map((amz: any) =>
-          amz.solicitante.id === user.id ? amz.destinatario : amz.solicitante,
+          amz.solicitante.id === user.id ? amz.destinatario : amz.solicitante
         );
       setAmigos(listaFormatada);
 
@@ -73,48 +86,56 @@ export default function Perfil() {
         email: userData.email,
       });
     } catch (err) {
-      console.log("Erro ao carregar perfil:", err);
+      console.log("Erro carregar perfil:", err);
     }
-  };
+  }
 
-  const carregarFavoritos = async () => {
-    if (!user?.id) return;
-    try {
-      const response = await api.get(`/jogos_favoritos/usuario/${user.id}`);
-      // response.data é uma lista de JogoFavorito com o campo `jogo` populado
-      const ids = response.data.map((fav: any) => fav.jogo.id);
-      setFavoritos(ids);
-    } catch (error) {
-      console.log("Erro ao carregar favoritos:", error);
-    }
-  };
-
-  const carregarJogos = async () => {
+  async function carregarJogos() {
     try {
       const response = await api.get("/jogos");
       setJogos(response.data);
     } catch (error) {
-      console.log("Erro ao carregar jogos:", error);
+      console.log("Erro carregar jogos:", error);
     }
-  };
+  }
 
-  const toggleFavorito = async (jogoId: string) => {
+  async function carregarFavoritos() {
     if (!user?.id) return;
-    const isFav = favoritos.includes(jogoId);
+    setCarregandoFavoritos(true);
+    try {
+      const response = await api.get(`/jogos_favoritos/usuario/${user.id}`);
+      // O backend retorna List<JogoFavorito> onde cada item tem { id, jogo: { id, nome, capa, ... } }
+      const listaJogos = response.data.map((fav: any) => fav.jogo);
+      setFavoritos(listaJogos);
+    } catch (error: any) {
+      console.log("Erro carregar favoritos:", error);
+      Alert.alert("Erro", "Falha ao carregar favoritos.");
+    } finally {
+      setCarregandoFavoritos(false);
+    }
+  }
+
+  async function toggleFavorito(jogoId: string) {
+    if (!user?.id) return;
+    const isFav = favoritos.some((fav) => fav.id === jogoId);
     setSalvandoFavorito(jogoId);
     try {
       if (isFav) {
         await api.delete(`/jogos_favoritos?jogoId=${jogoId}`, {
           headers: { "X-Usuario-Id": user.id },
         });
-        setFavoritos((prev) => prev.filter((id) => id !== jogoId));
+        setFavoritos((prev) => prev.filter((fav) => fav.id !== jogoId));
       } else {
         await api.post(
           `/jogos_favoritos?jogoId=${jogoId}`,
           {},
-          { headers: { "X-Usuario-Id": user.id } },
+          { headers: { "X-Usuario-Id": user.id } }
         );
-        setFavoritos((prev) => [...prev, jogoId]);
+        // Adiciona o jogo completo na lista local
+        const jogoCompleto = jogos.find((j) => j.id === jogoId);
+        if (jogoCompleto) {
+          setFavoritos((prev) => [...prev, jogoCompleto]);
+        }
       }
     } catch (error: any) {
       const msg = error.response?.data?.message || "Erro ao atualizar favorito";
@@ -122,7 +143,7 @@ export default function Perfil() {
     } finally {
       setSalvandoFavorito(null);
     }
-  };
+  }
 
   const salvarPerfil = async () => {
     if (!user?.id) {
@@ -149,8 +170,7 @@ export default function Perfil() {
     } catch (error: any) {
       Alert.alert(
         "Erro",
-        error.response?.data?.message ||
-          "Não foi possível salvar as alterações",
+        error.response?.data?.message || "Não foi possível salvar as alterações"
       );
     } finally {
       setSalvando(false);
@@ -355,41 +375,33 @@ export default function Perfil() {
           </TouchableOpacity>
         </View>
 
-        {favoritos.length === 0 && !editandoFavoritos && (
+        {carregandoFavoritos ? (
+          <ActivityIndicator color="#D4AF37" style={{ marginVertical: 10 }} />
+        ) : favoritos.length === 0 && !editandoFavoritos ? (
           <Text style={estilos.msgVazia}>Nenhum jogo favorito adicionado</Text>
-        )}
+        ) : null}
 
         {/* EXIBIÇÃO DOS FAVORITOS */}
         <View style={estilos.favoritos}>
-          {favoritos.map((id) => {
-            const jogo = jogos.find((j: any) => j.id === id);
-            if (!jogo) return null;
-            return (
-              <View key={id} style={estilos.jogoFavItem}>
-                {jogo.capa ? (
-                  <Image source={{ uri: jogo.capa }} style={estilos.img} />
-                ) : (
-                  <View style={estilos.placeholderImg}>
-                    <Ionicons
-                      name="game-controller"
-                      size={28}
-                      color="#D4AF37"
-                    />
-                  </View>
-                )}
-                <Text style={estilos.jogoFavNome}>
-                  {jogo.nome.toUpperCase()}
-                </Text>
-              </View>
-            );
-          })}
+          {favoritos.map((jogo) => (
+            <View key={jogo.id} style={estilos.jogoFavItem}>
+              {jogo.capa ? (
+                <Image source={{ uri: jogo.capa }} style={estilos.img} />
+              ) : (
+                <View style={estilos.placeholderImg}>
+                  <Ionicons name="game-controller" size={28} color="#D4AF37" />
+                </View>
+              )}
+              <Text style={estilos.jogoFavNome}>{jogo.nome.toUpperCase()}</Text>
+            </View>
+          ))}
         </View>
 
         {/* LISTA PARA EDITAR FAVORITOS */}
         {editandoFavoritos && (
           <View style={estilos.listaJogos}>
-            {jogos.map((jogo: any) => {
-              const isFav = favoritos.includes(jogo.id);
+            {jogos.map((jogo) => {
+              const isFav = favoritos.some((fav) => fav.id === jogo.id);
               const estaSalvando = salvandoFavorito === jogo.id;
               return (
                 <TouchableOpacity
@@ -399,20 +411,13 @@ export default function Perfil() {
                   disabled={estaSalvando}
                 >
                   {jogo.capa ? (
-                    <Image
-                      source={{ uri: jogo.capa }}
-                      style={estilos.jogoItemImg}
-                    />
+                    <Image source={{ uri: jogo.capa }} style={estilos.jogoItemImg} />
                   ) : (
                     <View style={estilos.jogoItemImgPlaceholder}>
                       {estaSalvando ? (
                         <ActivityIndicator size="small" color="#FFF" />
                       ) : (
-                        <Ionicons
-                          name="game-controller"
-                          size={20}
-                          color="#FFF"
-                        />
+                        <Ionicons name="game-controller" size={20} color="#FFF" />
                       )}
                     </View>
                   )}
