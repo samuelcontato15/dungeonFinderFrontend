@@ -25,14 +25,14 @@ const categoriasBase = [
 
 // Combinações possíveis
 const combinacoes: Record<string, string> = {
-  "": "MMO", // padrão
-  "NOVIDADE": "NOVIDADE",
+  "": "MMO",
   "MMO": "MMO",
+  "NOVIDADE": "NOVIDADE",
   "RPG": "RPG",
-  "NOVIDADE,MMO": "NOVIDADE_MMO",
+  "MMO,NOVIDADE": "NOVIDADE_MMO",
   "NOVIDADE,RPG": "NOVIDADE_RPG",
   "MMO,RPG": "MMO_RPG",
-  "NOVIDADE,MMO,RPG": "NOVIDADE_MMO_RPG",
+  "MMO,NOVIDADE,RPG": "NOVIDADE_MMO_RPG",
 };
 
 // Converte o valor do enum para array de checkboxes ativos
@@ -88,10 +88,11 @@ export default function Jogos() {
 
   // Calcula o valor do enum a partir dos checkboxes selecionados
   function obterCategoria(): string {
-    const chave = checkboxes.sort().join(",");
+    const chave = [...checkboxes].sort().join(",");
     return combinacoes[chave] || "MMO";
   }
 
+  
   async function salvarJogo() {
     if (!nome.trim()) {
       Alert.alert("Atenção", "Nome do jogo é obrigatório");
@@ -105,6 +106,7 @@ export default function Jogos() {
       capa: capa || "",
       categoria: obterCategoria(),
     };
+
 
     setLoading(true);
     try {
