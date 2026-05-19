@@ -1,11 +1,12 @@
-
 import BarraNavegacao from "@/components/BarraNavegacao";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   ImageBackground,
   ScrollView,
@@ -32,6 +33,8 @@ interface Raid {
   minJogadores: number;
   maxJogadores: number;
   inicioEm: string;
+  participantes?: any[];
+  criadoPor?: { id: string };
 }
 
 interface Guilda {
@@ -51,12 +54,14 @@ export default function Home() {
   const margens = useSafeAreaInsets();
   const router = useRouter();
   const { jogoId } = useLocalSearchParams<{ jogoId: string }>();
+  const { user } = useAuth();
 
   const [jogo, setJogo] = useState<Jogo | null>(null);
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [raids, setRaids] = useState<Raid[]>([]);
   const [guildas, setGuildas] = useState<Guilda[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [inscrevendo, setInscrevendo] = useState<string | null>(null);
 
   useEffect(() => {
     if (jogoId) {
@@ -75,12 +80,64 @@ export default function Home() {
       ]);
       setJogo(jogoRes.data);
       setEventos(eventosRes.data || []);
-      setRaids(raidsRes.data || []);
       setGuildas(guildasRes.data || []);
+
+      const raidsComParticipantes = await Promise.all(
+        (raidsRes.data || []).map(async (raid: any) => {
+          try {
+            const participantesRes = await api.get(
+              `/participantes/raid/${raid.id}`,
+            );
+            console.log(
+              `Participantes da raid ${raid.id}:`,
+              participantesRes.data,
+            );
+            return { ...raid, participantes: participantesRes.data };
+          } catch {
+            return { ...raid, participantes: [] };
+          }
+        }),
+      );
+      setRaids(raidsComParticipantes);
     } catch (error) {
       console.log("Erro HOME:", error);
     } finally {
       setCarregando(false);
+    }
+  }
+
+  async function inscreverNaRaid(raidId: string) {
+    if (!user?.id) {
+      Alert.alert("Erro", "Usuário não identificado");
+      return;
+    }
+    setInscrevendo(raidId);
+    try {
+      await api.post(
+        `/participantes?raidId=${raidId}`,
+        {},
+        { headers: { "X-Usuario-Id": user.id } },
+      );
+
+      // Busca APENAS os participantes da raid atualizada
+      const participantesRes = await api.get(`/participantes/raid/${raidId}`);
+      const novosParticipantes = participantesRes.data;
+
+      // Atualiza o estado substituindo a raid específica
+      setRaids((prevRaids) =>
+        prevRaids.map((raid) =>
+          raid.id === raidId
+            ? { ...raid, participantes: novosParticipantes }
+            : raid,
+        ),
+      );
+
+      Alert.alert("Inscrito!", "Você agora participa desta raid.");
+    } catch (error: any) {
+      const msg = error.response?.data?.message || "Erro ao se inscrever";
+      Alert.alert("Erro", msg);
+    } finally {
+      setInscrevendo(null);
     }
   }
 
@@ -104,6 +161,19 @@ export default function Home() {
     );
   }
 
+  const isInscrito = (raid: Raid) => {
+    if (!user?.id) return false;
+    return (
+      raid.participantes?.some(
+        (p) => p.id?.usuarioId === user.id || p.usuario?.id === user.id,
+      ) ?? false
+    );
+  };
+
+  const isRaidCheia = (raid: Raid) => {
+    return (raid.participantes?.length ?? 0) >= raid.maxJogadores;
+  };
+
   return (
     <ImageBackground
       source={require("../assets/fundo1.png")}
@@ -123,11 +193,21 @@ export default function Home() {
       >
         {/* CAPA DO JOGO */}
         {jogo?.capa ? (
-          <Image source={{ uri: jogo.capa }} style={estilos.banner} resizeMode="cover" />
+          <Image
+            source={{ uri: jogo.capa }}
+            style={estilos.banner}
+            resizeMode="cover"
+          />
         ) : (
           <View style={estilos.bannerPlaceholder}>
-            <Ionicons name="game-controller-outline" size={48} color="#D4AF37" />
-            <Text style={estilos.bannerPlaceholderText}>{jogo?.nome || "Jogo"}</Text>
+            <Ionicons
+              name="game-controller-outline"
+              size={48}
+              color="#D4AF37"
+            />
+            <Text style={estilos.bannerPlaceholderText}>
+              {jogo?.nome || "Jogo"}
+            </Text>
           </View>
         )}
 
@@ -142,15 +222,26 @@ export default function Home() {
                 <Text style={estilos.tituloEvento}>{evento.nome}</Text>
                 <View style={estilos.cardConteudo}>
                   {evento.banner ? (
-                    <Image source={{ uri: evento.banner }} style={estilos.imagemEvento} />
+                    <Image
+                      source={{ uri: evento.banner }}
+                      style={estilos.imagemEvento}
+                    />
                   ) : (
                     <View style={estilos.semImagem}>
-                      <Ionicons name="image-outline" size={28} color="#D4AF37" />
+                      <Ionicons
+                        name="image-outline"
+                        size={28}
+                        color="#D4AF37"
+                      />
                     </View>
                   )}
-                  <Text style={estilos.descricaoEvento}>{evento.descricao}</Text>
+                  <Text style={estilos.descricaoEvento}>
+                    {evento.descricao}
+                  </Text>
                 </View>
-                <Text style={estilos.dataEvento}>Duração: até {formatarData(evento.fimEm)}</Text>
+                <Text style={estilos.dataEvento}>
+                  Duração: até {formatarData(evento.fimEm)}
+                </Text>
               </View>
             ))
           )}
@@ -161,7 +252,12 @@ export default function Home() {
             <Text style={estilos.tituloSecao}>RAIDS</Text>
             <TouchableOpacity
               style={estilos.botaoCriarRaid}
-              onPress={() => router.push({ pathname: "/criarraid", params: { jogoId } } as any)}
+              onPress={() =>
+                router.push({
+                  pathname: "/criarraid",
+                  params: { jogoId },
+                } as any)
+              }
             >
               <Ionicons name="add" size={24} color="#1a1008" />
             </TouchableOpacity>
@@ -170,37 +266,140 @@ export default function Home() {
           {raids.length === 0 ? (
             <Text style={estilos.textoVazio}>Nenhuma raid criada.</Text>
           ) : (
-            raids.map((raid) => (
-              <View key={raid.id} style={estilos.cardRaid}>
-                <Text style={estilos.nomeRaid}>{raid.nome}</Text>
-                <Text style={estilos.infoRaid}>
-                  Jogadores: {raid.minJogadores} - {raid.maxJogadores} · {formatarData(raid.inicioEm)}
-                </Text>
-                {raid.descricao && <Text style={estilos.descricaoRaid}>{raid.descricao}</Text>}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.membrosContainer}>
-                  {Array.from({ length: Math.min(raid.maxJogadores, 5) }).map((_, index) => (
-                    <View key={index} style={estilos.membroContainer}>
-                      <View style={estilos.avatar}>
-                        <Ionicons name="person" size={20} color="#999" />
-                      </View>
-                      <Text style={estilos.nomeMembro}>membro</Text>
+            raids.map((raid) => {
+              const inscrito = isInscrito(raid);
+              const cheia = isRaidCheia(raid);
+              const podeParticipar =
+                user && user.id !== raid.criadoPor?.id && !inscrito && !cheia;
+              const estaInscrito = inscrito;
+              const estaCheia = cheia;
+
+              return (
+                <View key={raid.id} style={estilos.cardRaid}>
+                  <View style={estilos.cardRaidHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={estilos.nomeRaid}>{raid.nome}</Text>
+                      <Text style={estilos.infoRaid}>
+                        <Ionicons name="people" size={12} color="#D4AF37" />{" "}
+                        {raid.participantes?.length ?? 0}/{raid.maxJogadores}{" "}
+                        jogadores · {formatarData(raid.inicioEm)}
+                      </Text>
+                      {raid.descricao && (
+                        <Text style={estilos.descricaoRaid}>
+                          {raid.descricao}
+                        </Text>
+                      )}
                     </View>
-                  ))}
-                </ScrollView>
-              </View>
-            ))
+
+                    {estaInscrito && (
+                      <View style={estilos.badgeInscrito}>
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={14}
+                          color="#1a1008"
+                        />
+                        <Text style={estilos.badgeInscritoTexto}>Inscrito</Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Lista de participantes */}
+                  {(raid.participantes?.length ?? 0) > 0 && (
+                    <View style={estilos.participantesSecao}>
+                      <Text style={estilos.participantesTitulo}>
+                        Participantes
+                      </Text>
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={estilos.membrosContainer}
+                      >
+                        {(raid.participantes || []).map((p: any) => (
+                          <View
+                            key={p.id?.usuarioId ?? p.usuario?.id}
+                            style={estilos.membroContainer}
+                          >
+                            <View style={estilos.avatar}>
+                              {p.usuario?.fotoPerfil ? (
+                                <Image
+                                  source={{ uri: p.usuario.fotoPerfil }}
+                                  style={{ width: 50, height: 50 }}
+                                />
+                              ) : (
+                                <Ionicons
+                                  name="person"
+                                  size={22}
+                                  color="#D4AF37"
+                                />
+                              )}
+                            </View>
+                            <Text style={estilos.nomeMembro} numberOfLines={1}>
+                              {p.usuario?.nick || p.nick || "membro"}
+                            </Text>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+
+                  {/* Footer com ação */}
+                  <View style={estilos.raidFooter}>
+                    {!estaInscrito && estaCheia && (
+                      <View style={estilos.tagCheia}>
+                        <Ionicons
+                          name="lock-closed"
+                          size={12}
+                          color="#FFA500"
+                        />
+                        <Text style={estilos.textoCheia}> Raid cheia</Text>
+                      </View>
+                    )}
+                    {podeParticipar && (
+                      <TouchableOpacity
+                        style={estilos.botaoParticipar}
+                        onPress={() => inscreverNaRaid(raid.id)}
+                        disabled={inscrevendo === raid.id}
+                      >
+                        {inscrevendo === raid.id ? (
+                          <ActivityIndicator size="small" color="#FFF" />
+                        ) : (
+                          <>
+                            <Ionicons
+                              name="add-circle-outline"
+                              size={14}
+                              color="#FFF"
+                            />
+                            <Text style={estilos.textoBotaoParticipar}>
+                              {" "}
+                              Participar
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+              );
+            })
           )}
           <View style={estilos.divisor} />
 
           {/* PERSONAGENS DA COMUNIDADE (GUILDAS) */}
-          <Text style={[estilos.tituloSecao, { marginTop: 8 }]}>PERSONAGENS DA COMUNIDADE</Text>
+          <Text style={[estilos.tituloSecao, { marginTop: 8 }]}>
+            PERSONAGENS DA COMUNIDADE
+          </Text>
           {guildas.length === 0 ? (
-            <Text style={estilos.textoVazio}>Nenhum personagem encontrado.</Text>
+            <Text style={estilos.textoVazio}>
+              Nenhum personagem encontrado.
+            </Text>
           ) : (
             guildas.map((guilda) => (
               <View key={guilda.id} style={estilos.cardGuilda}>
                 {guilda.banner ? (
-                  <Image source={{ uri: guilda.banner }} style={estilos.imagemGuilda} />
+                  <Image
+                    source={{ uri: guilda.banner }}
+                    style={estilos.imagemGuilda}
+                  />
                 ) : (
                   <View style={estilos.imagemGuildaPlaceholder}>
                     <Ionicons name="people-outline" size={28} color="#D4AF37" />
@@ -225,12 +424,12 @@ export default function Home() {
 
 const estilos = StyleSheet.create({
   fundo: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.65)" },
-  centralizar: { flex: 1, justifyContent: "center", alignItems: "center" },
-  banner: {
-    width: "100%",
-    height: 180,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.65)",
   },
+  centralizar: { flex: 1, justifyContent: "center", alignItems: "center" },
+  banner: { width: "100%", height: 180 },
   bannerPlaceholder: {
     width: "100%",
     height: 180,
@@ -244,10 +443,7 @@ const estilos = StyleSheet.create({
     fontWeight: "bold",
     marginTop: 8,
   },
-  container: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
+  container: { paddingHorizontal: 16, paddingTop: 16 },
   tituloSecao: {
     color: "#FFF",
     fontSize: 20,
@@ -292,15 +488,8 @@ const estilos = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 8,
   },
-  cardConteudo: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  imagemEvento: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
+  cardConteudo: { flexDirection: "row", gap: 12 },
+  imagemEvento: { width: 80, height: 80, borderRadius: 8 },
   semImagem: {
     width: 80,
     height: 80,
@@ -309,63 +498,112 @@ const estilos = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  descricaoEvento: {
-    flex: 1,
-    color: "#DDD",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  dataEvento: {
-    color: "#D4AF37",
-    fontSize: 12,
-    marginTop: 8,
-  },
+  descricaoEvento: { flex: 1, color: "#DDD", fontSize: 13, lineHeight: 18 },
+  dataEvento: { color: "#D4AF37", fontSize: 12, marginTop: 8 },
   cardRaid: {
-    marginBottom: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(20, 12, 4, 0.75)",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(212, 175, 55, 0.25)",
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  cardRaidHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    padding: 14,
+    paddingBottom: 10,
   },
   nomeRaid: {
     color: "#FFF",
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "bold",
+    marginBottom: 3,
   },
-  infoRaid: {
-    color: "#CCC",
-    fontSize: 13,
-    marginTop: 2,
+  infoRaid: { color: "#D4AF37", fontSize: 12, marginTop: 2 },
+  descricaoRaid: { color: "#AAA", fontSize: 12, marginTop: 6, lineHeight: 17 },
+  badgeInscrito: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#D4AF37",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginLeft: 8,
+    alignSelf: "flex-start",
   },
-  descricaoRaid: {
-    color: "#AAA",
-    fontSize: 12,
-    marginTop: 4,
+  badgeInscritoTexto: {
+    color: "#1a1008",
+    fontWeight: "bold",
+    fontSize: 11,
+    marginLeft: 3,
+  },
+  participantesSecao: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.07)",
+    paddingTop: 10,
+    paddingHorizontal: 14,
+    paddingBottom: 4,
+  },
+  participantesTitulo: {
+    color: "rgba(255,255,255,0.4)",
+    fontSize: 10,
+    fontWeight: "bold",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 10,
   },
   membrosContainer: {
     flexDirection: "row",
-    gap: 12,
-    paddingTop: 12,
+    gap: 10,
+    paddingBottom: 8,
   },
-  membroContainer: {
-    alignItems: "center",
-    width: 60,
-  },
+  membroContainer: { alignItems: "center", width: 58 },
   avatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "#2a2010",
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderWidth: 1.5,
+    borderColor: "rgba(212,175,55,0.35)",
+    overflow: "hidden",
   },
   nomeMembro: {
-    color: "#BBB",
-    fontSize: 11,
-    marginTop: 4,
+    color: "#CCC",
+    fontSize: 10,
+    marginTop: 5,
     textAlign: "center",
+    maxWidth: 58,
   },
+  raidFooter: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.07)",
+  },
+  botaoParticipar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4CAF50",
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+  },
+  textoBotaoParticipar: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 13,
+  },
+  tagCheia: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  textoCheia: { color: "#FFA500", fontWeight: "bold", fontSize: 12 },
   cardGuilda: {
     flexDirection: "row",
     alignItems: "center",
@@ -375,11 +613,7 @@ const estilos = StyleSheet.create({
     marginBottom: 12,
     gap: 12,
   },
-  imagemGuilda: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
+  imagemGuilda: { width: 60, height: 60, borderRadius: 30 },
   imagemGuildaPlaceholder: {
     width: 60,
     height: 60,
@@ -388,17 +622,7 @@ const estilos = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  guildaInfo: {
-    flex: 1,
-  },
-  nomeGuilda: {
-    color: "#FFF",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  descricaoGuilda: {
-    color: "#CCC",
-    fontSize: 12,
-    marginTop: 2,
-  },
+  guildaInfo: { flex: 1 },
+  nomeGuilda: { color: "#FFF", fontSize: 16, fontWeight: "bold" },
+  descricaoGuilda: { color: "#CCC", fontSize: 12, marginTop: 2 },
 });
