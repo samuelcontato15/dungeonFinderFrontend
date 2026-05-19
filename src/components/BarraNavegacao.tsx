@@ -19,26 +19,24 @@ export default function BarraNavegacao() {
   const caminhoAtual = usePathname();
   const { isAuthenticated } = useAuth();
 
-  function handleNavegar(rota: string) {
-    if (!isAuthenticated) {
-      roteador.push("/dungeonEntrada" as any);
-      return;
-    }
-
-    if (rota === "/") {
-      roteador.push("/home" as any);
-      return;
-    }
-
-    roteador.push(rota as any);
+function handleNavegar(rota: string) {
+  if (!isAuthenticated) {
+    roteador.push("/dungeonEntrada" as any);
+    return;
   }
 
+  if (caminhoAtual === rota) {
+    return;
+  }
+
+  roteador.push(rota as any);
+}
   return (
     <View style={[estilos.barra, { paddingBottom: margens.bottom + 6 }]}>
       {ITENS_NAVEGACAO.map((item) => {
         const ativo =
           caminhoAtual === item.rota ||
-          (item.rota === "/" && caminhoAtual === "/home");
+          (item.rota === "/" && caminhoAtual === "/");
 
         return (
           <TouchableOpacity

@@ -16,25 +16,15 @@ interface AuthContextData {
   user: User | null;
   isLoading: boolean;
   signIn: (emailOrUser: string, senha: string) => Promise<void>;
-  signUp: (
-    usuario: string,
-    email: string,
-    senha: string,
-  ) => Promise<void>;
+  signUp: (usuario: string, email: string, senha: string) => Promise<void>;
   signOut: () => Promise<void>;
   isAuthenticated: boolean;
   updateUser: (updatedData: Partial<User>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextData>(
-  {} as AuthContextData,
-);
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-export function AuthProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,14 +32,10 @@ export function AuthProvider({
     loadStoredUser();
   }, []);
 
-  async function fetchFullUser(
-    id: string,
-  ): Promise<User | null> {
+  async function fetchFullUser(id: string): Promise<User | null> {
     try {
       const response = await api.get(`/usuarios/${id}`);
-
       const data = response.data;
-
       return {
         id: data.id,
         usuario: data.nick,
@@ -59,161 +45,140 @@ export function AuthProvider({
         corAvatar: data.corAvatar,
         isAdmin: data.isAdmin,
       };
-    } catch (error) {
-      console.error(
-        "Erro ao buscar dados completos do usuário:",
-        error,
-      );
-
+    } catch (error: any) {
+      // Token expirado ou inválido — limpa sessão e força novo login
+      if (error?.response?.status === 401 || error?.response?.status === 403) {
+        await AsyncStorage.multiRemove(["@DungeonFinder:token", "@DungeonFinder:user"]);
+      }
       return null;
     }
   }
 
   async function loadStoredUser() {
-    try {
-      const storedUser = await AsyncStorage.getItem(
-        "@DungeonFinder:user",
-      );
+  try {
+    setIsLoading(true);
 
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+    const [storedUser, token] = await AsyncStorage.multiGet([
+      "@DungeonFinder:user",
+      "@DungeonFinder:token",
+    ]);
 
-        if (parsedUser.id) {
-          const fullUser = await fetchFullUser(
-            parsedUser.id,
-          );
+    const userData = storedUser[1];
+    const tokenData = token[1];
 
-          if (fullUser) {
-            setUser(fullUser);
-
-            await AsyncStorage.setItem(
-              "@DungeonFinder:user",
-              JSON.stringify(fullUser),
-            );
-          } else {
-            setUser(parsedUser);
-          }
-        } else {
-          setUser(parsedUser);
-        }
-      }
-    } catch (e) {
-      console.error("Erro ao carregar usuário:", e);
-    } finally {
-      setIsLoading(false);
+    if (!userData || !tokenData) {
+      setUser(null);
+      return;
     }
-  }
 
-  async function buscarIdPorNick(
-    identificador: string,
-  ): Promise<string> {
+    const parsedUser = JSON.parse(userData);
+
+    if (!parsedUser?.id) {
+      setUser(null);
+
+      await AsyncStorage.multiRemove([
+        "@DungeonFinder:user",
+        "@DungeonFinder:token",
+      ]);
+
+      return;
+    }
+
+    const fullUser = await fetchFullUser(parsedUser.id);
+
+    if (!fullUser) {
+      setUser(null);
+
+      await AsyncStorage.multiRemove([
+        "@DungeonFinder:user",
+        "@DungeonFinder:token",
+      ]);
+
+      return;
+    }
+
+    setUser(fullUser);
+
+    await AsyncStorage.setItem(
+      "@DungeonFinder:user",
+      JSON.stringify(fullUser)
+    );
+  } catch (e) {
+    console.error("Erro ao carregar usuário:", e);
+
+    setUser(null);
+
+    await AsyncStorage.multiRemove([
+      "@DungeonFinder:user",
+      "@DungeonFinder:token",
+    ]);
+  } finally {
+    setIsLoading(false);
+  }
+}
+
+  async function buscarIdPorNick(identificador: string): Promise<string> {
     try {
       const response = await api.get<any[]>("/usuarios");
-
       const encontrado = response.data.find(
         (u) =>
-          u.nick?.toLowerCase() ===
-            identificador.toLowerCase() ||
-          u.email?.toLowerCase() ===
-            identificador.toLowerCase(),
+          u.nick?.toLowerCase() === identificador.toLowerCase() ||
+          u.email?.toLowerCase() === identificador.toLowerCase()
       );
-
-      if (encontrado) {
-        return encontrado.id;
-      }
-
-      console.error(
-        "DEBUG: Usuário não encontrado no backend para:",
-        identificador,
-      );
-
-      return "";
-    } catch (err) {
-      console.error("Erro ao buscar ID:", err);
+      return encontrado?.id ?? "";
+    } catch {
       return "";
     }
   }
 
-  async function signIn(
-    emailOrUser: string,
-    senha: string,
-  ) {
-    const response = await api.post<string>(
-      "/auth/login",
-      {
-        email: emailOrUser,
-        senha,
-      },
-    );
+  async function signIn(emailOrUser: string, senha: string) {
+    const response = await api.post<string>("/auth/login", {
+      email: emailOrUser,
+      senha,
+    });
 
     const token = response.data;
 
-    await AsyncStorage.setItem(
-      "@DungeonFinder:token",
-      token,
-    );
+    // Salva o token ANTES de qualquer outra chamada autenticada
+    await AsyncStorage.setItem("@DungeonFinder:token", token);
 
     const id = await buscarIdPorNick(emailOrUser);
 
     if (!id) {
-      throw new Error(
-        "Não foi possível localizar o seu ID de usuário.",
-      );
+      throw new Error("Não foi possível localizar o seu ID de usuário.");
     }
 
     const fullUser = await fetchFullUser(id);
 
     if (!fullUser) {
-      throw new Error(
-        "Usuário não encontrado no backend",
-      );
+      throw new Error("Usuário não encontrado no backend.");
     }
 
-    await AsyncStorage.setItem(
-      "@DungeonFinder:user",
-      JSON.stringify(fullUser),
-    );
-
+    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(fullUser));
     setUser(fullUser);
   }
 
-  async function signUp(
-    usuario: string,
-    email: string,
-    senha: string,
-  ) {
+  async function signUp(usuario: string, email: string, senha: string) {
     try {
-      const response = await api.post<string>(
-        "/auth/register",
-        {
-          nick: usuario,
-          email,
-          senha,
-        },
-      );
+      const response = await api.post<string>("/auth/register", {
+        nick: usuario,
+        email,
+        senha,
+      });
 
       const token = response.data;
 
-      await AsyncStorage.setItem(
-        "@DungeonFinder:token",
-        token,
-      );
+      // Salva o token ANTES de qualquer outra chamada autenticada
+      await AsyncStorage.setItem("@DungeonFinder:token", token);
 
       const id = await buscarIdPorNick(usuario);
-
       const fullUser = await fetchFullUser(id);
 
       if (!fullUser) {
-        throw new Error(
-          "Usuário não encontrado após cadastro",
-        );
+        throw new Error("Usuário não encontrado após cadastro.");
       }
 
-      await AsyncStorage.setItem(
-        "@DungeonFinder:user",
-        JSON.stringify(fullUser),
-      );
-
+      await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(fullUser));
       setUser(fullUser);
     } catch (e: any) {
       console.log("Erro no cadastro:", e?.message);
@@ -222,43 +187,20 @@ export function AuthProvider({
   }
 
   async function signOut() {
-    await AsyncStorage.multiRemove([
-      "@DungeonFinder:token",
-      "@DungeonFinder:user",
-    ]);
-
+    await AsyncStorage.multiRemove(["@DungeonFinder:token", "@DungeonFinder:user"]);
     setUser(null);
   }
 
-  async function updateUser(
-    updatedData: Partial<User>,
-  ) {
+  async function updateUser(updatedData: Partial<User>) {
     if (!user) return;
-
-    const updatedUser = {
-      ...user,
-      ...updatedData,
-    };
-
+    const updatedUser = { ...user, ...updatedData };
     setUser(updatedUser);
-
-    await AsyncStorage.setItem(
-      "@DungeonFinder:user",
-      JSON.stringify(updatedUser),
-    );
+    await AsyncStorage.setItem("@DungeonFinder:user", JSON.stringify(updatedUser));
   }
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        signIn,
-        signUp,
-        signOut,
-        isAuthenticated: !!user,
-        updateUser,
-      }}
+      value={{ user, isLoading, signIn, signUp, signOut, isAuthenticated: !!user, updateUser }}
     >
       {children}
     </AuthContext.Provider>
@@ -267,15 +209,8 @@ export function AuthProvider({
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-
-  if (!ctx) {
-    throw new Error(
-      "useAuth deve ser usado dentro de AuthProvider",
-    );
-  }
-
+  if (!ctx) throw new Error("useAuth deve ser usado dentro de AuthProvider");
   return ctx;
 }
 
-
-export default AuthContext; 
+export default AuthContext;
