@@ -66,7 +66,7 @@ export default function Inicio() {
       return;
     }
     router.push({
-      pathname: "/home",
+      pathname: "/telaJogo",
       params: { jogoId: jogo.id },
     } as any);
   }

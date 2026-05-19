@@ -51,7 +51,6 @@ export default function PerfilPublico() {
   const [carregando, setCarregando] = useState(true);
   const [removendo, setRemovendo] = useState(false);
 
-  // Estado para os jogos favoritos do usuário visualizado
   const [favoritosJogos, setFavoritosJogos] = useState<Jogo[]>([]);
   const [carregandoFavoritos, setCarregandoFavoritos] = useState(false);
 
@@ -75,7 +74,6 @@ export default function PerfilPublico() {
         );
       setAmigos(listaFormatada);
 
-      // Verifica se o usuário logado é amigo do perfil visualizado
       if (user?.id) {
         const amizadesDoUsuario = await api.get(`/amizades/usuario/${user.id}`);
         const amizade = amizadesDoUsuario.data.find(
@@ -89,7 +87,6 @@ export default function PerfilPublico() {
         if (amizade) setAmizadeId(amizade.id);
       }
 
-      // Carrega os jogos favoritos do usuário visualizado
       await carregarFavoritos();
     } catch (err) {
       console.log("Erro ao carregar perfil público:", err);
@@ -102,7 +99,6 @@ export default function PerfilPublico() {
     setCarregandoFavoritos(true);
     try {
       const response = await api.get(`/jogos_favoritos/usuario/${idFinal}`);
-      // Extrai a lista de jogos a partir dos objetos JogoFavorito
       const jogosFav = response.data.map((fav: any) => fav.jogo);
       setFavoritosJogos(jogosFav);
     } catch (error) {
@@ -134,7 +130,6 @@ export default function PerfilPublico() {
                 "Você não é mais amigo dessa pessoa.",
               );
               setAmizadeId(null);
-              // Recarrega os dados para atualizar a lista de amigos do perfil
               await carregarDados();
             } catch (error) {
               Alert.alert("Erro", "Não foi possível desfazer a amizade.");

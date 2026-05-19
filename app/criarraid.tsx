@@ -32,7 +32,6 @@ export default function CriarRaid() {
   const [inicioEm, setInicioEm] = useState("");
   const [carregando, setCarregando] = useState(false);
 
-  // Formata automaticamente DD/MM enquanto digita
   function formatarData(texto: string) {
     let numeros = texto.replace(/\D/g, "");
     if (numeros.length > 4) numeros = numeros.slice(0, 4);
@@ -60,7 +59,6 @@ export default function CriarRaid() {
       return;
     }
 
-    // Valida formato DD/MM
     const partes = inicioEm.split("/");
     if (partes.length !== 2 || partes[0].length !== 2 || partes[1].length !== 2) {
       Alert.alert("Formato inválido", "Use DD/MM (ex: 25/12)");
