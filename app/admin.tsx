@@ -1,45 +1,35 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
   ScrollView,
-  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { useAuth } from "@/context/AuthContext";
-import { Redirect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { Redirect, useRouter } from "expo-router";
 
 export default function Admin() {
-
   const { user } = useAuth();
   const router = useRouter();
 
   const [abaAberta, setAbaAberta] = useState<string | null>(null);
 
   if (!user?.isAdmin) {
-    return <Redirect href="/home" />;
+    return <Redirect href="/telaJogo" />;
   }
 
   function toggleAba(nome: string) {
-    setAbaAberta((prev) =>
-      prev === nome ? null : nome
-    );
+    setAbaAberta((prev) => (prev === nome ? null : nome));
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-    >
-      <Text style={styles.title}>
-        Painel Administrativo
-      </Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Painel Administrativo</Text>
 
-      <Text style={styles.subtitle}>
-        Bem-vindo, {user.usuario}
-      </Text>
+      <Text style={styles.subtitle}>Bem-vindo, {user.usuario}</Text>
 
       {/* USUÁRIOS */}
 
@@ -47,16 +37,10 @@ export default function Admin() {
         style={styles.card}
         onPress={() => toggleAba("usuarios")}
       >
-        <Ionicons
-          name="people"
-          size={28}
-          color="#D4AF37"
-        />
+        <Ionicons name="people" size={28} color="#D4AF37" />
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>
-            Gerenciar Usuários
-          </Text>
+          <Text style={styles.cardTitle}>Gerenciar Usuários</Text>
 
           <Text style={styles.cardText}>
             Visualizar, editar e remover usuários
@@ -68,9 +52,7 @@ export default function Admin() {
                 style={styles.menuButton}
                 onPress={() => router.push("/admin/usuarios")}
               >
-                <Text style={styles.menuText}>
-                  Abrir gerenciamento
-                </Text>
+                <Text style={styles.menuText}>Abrir gerenciamento</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -79,24 +61,13 @@ export default function Admin() {
 
       {/* JOGOS */}
 
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleAba("jogos")}
-      >
-        <Ionicons
-          name="game-controller"
-          size={28}
-          color="#D4AF37"
-        />
+      <TouchableOpacity style={styles.card} onPress={() => toggleAba("jogos")}>
+        <Ionicons name="game-controller" size={28} color="#D4AF37" />
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>
-            Gerenciar Jogos
-          </Text>
+          <Text style={styles.cardTitle}>Gerenciar Jogos</Text>
 
-          <Text style={styles.cardText}>
-            Adicionar e editar jogos
-          </Text>
+          <Text style={styles.cardText}>Adicionar e editar jogos</Text>
 
           {abaAberta === "jogos" && (
             <View style={styles.menu}>
@@ -104,9 +75,7 @@ export default function Admin() {
                 style={styles.menuButton}
                 onPress={() => router.push("/admin/jogos")}
               >
-                <Text style={styles.menuText}>
-                  Abrir gerenciamento
-                </Text>
+                <Text style={styles.menuText}>Abrir gerenciamento</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -119,20 +88,12 @@ export default function Admin() {
         style={styles.card}
         onPress={() => toggleAba("guildas")}
       >
-        <Ionicons
-          name="shield"
-          size={28}
-          color="#D4AF37"
-        />
+        <Ionicons name="shield" size={28} color="#D4AF37" />
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>
-            Gerenciar Guildas
-          </Text>
+          <Text style={styles.cardTitle}>Gerenciar Guildas</Text>
 
-          <Text style={styles.cardText}>
-            Controlar guildas e membros
-          </Text>
+          <Text style={styles.cardText}>Controlar guildas e membros</Text>
 
           {abaAberta === "guildas" && (
             <View style={styles.menu}>
@@ -140,9 +101,7 @@ export default function Admin() {
                 style={styles.menuButton}
                 onPress={() => router.push("/admin/guildas")}
               >
-                <Text style={styles.menuText}>
-                  Abrir gerenciamento
-                </Text>
+                <Text style={styles.menuText}>Abrir gerenciamento</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -155,20 +114,12 @@ export default function Admin() {
         style={styles.card}
         onPress={() => toggleAba("eventos")}
       >
-        <Ionicons
-          name="calendar"
-          size={28}
-          color="#D4AF37"
-        />
+        <Ionicons name="calendar" size={28} color="#D4AF37" />
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>
-            Gerenciar Eventos
-          </Text>
+          <Text style={styles.cardTitle}>Gerenciar Eventos</Text>
 
-          <Text style={styles.cardText}>
-            Criar e editar eventos
-          </Text>
+          <Text style={styles.cardText}>Criar e editar eventos</Text>
 
           {abaAberta === "eventos" && (
             <View style={styles.menu}>
@@ -176,9 +127,7 @@ export default function Admin() {
                 style={styles.menuButton}
                 onPress={() => router.push("/admin/eventos")}
               >
-                <Text style={styles.menuText}>
-                  Abrir gerenciamento
-                </Text>
+                <Text style={styles.menuText}>Abrir gerenciamento</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -187,24 +136,13 @@ export default function Admin() {
 
       {/* RAIDS */}
 
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleAba("raids")}
-      >
-        <Ionicons
-          name="skull"
-          size={28}
-          color="#D4AF37"
-        />
+      <TouchableOpacity style={styles.card} onPress={() => toggleAba("raids")}>
+        <Ionicons name="skull" size={28} color="#D4AF37" />
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>
-            Gerenciar Raids
-          </Text>
+          <Text style={styles.cardTitle}>Gerenciar Raids</Text>
 
-          <Text style={styles.cardText}>
-            Organizar raids do sistema
-          </Text>
+          <Text style={styles.cardText}>Organizar raids do sistema</Text>
 
           {abaAberta === "raids" && (
             <View style={styles.menu}>
@@ -212,9 +150,7 @@ export default function Admin() {
                 style={styles.menuButton}
                 onPress={() => router.push("/admin/raids")}
               >
-                <Text style={styles.menuText}>
-                  Abrir gerenciamento
-                </Text>
+                <Text style={styles.menuText}>Abrir gerenciamento</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -227,20 +163,12 @@ export default function Admin() {
         style={styles.card}
         onPress={() => toggleAba("relatorios")}
       >
-        <Ionicons
-          name="bar-chart"
-          size={28}
-          color="#D4AF37"
-        />
+        <Ionicons name="bar-chart" size={28} color="#D4AF37" />
 
         <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>
-            Relatórios
-          </Text>
+          <Text style={styles.cardTitle}>Relatórios</Text>
 
-          <Text style={styles.cardText}>
-            Estatísticas da plataforma
-          </Text>
+          <Text style={styles.cardText}>Estatísticas da plataforma</Text>
 
           {abaAberta === "relatorios" && (
             <View style={styles.menu}>
@@ -248,9 +176,7 @@ export default function Admin() {
                 style={styles.menuButton}
                 onPress={() => router.push("/admin/relatorios")}
               >
-                <Text style={styles.menuText}>
-                  Abrir relatórios
-                </Text>
+                <Text style={styles.menuText}>Abrir relatórios</Text>
               </TouchableOpacity>
             </View>
           )}

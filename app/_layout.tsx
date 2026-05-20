@@ -8,19 +8,19 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AuthProvider>
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index"          />
+          <Stack.Screen name="index" />
           <Stack.Screen name="dungeonEntrada" />
-          <Stack.Screen name="login"          />
-          <Stack.Screen name="cadastro"       />
-          <Stack.Screen name="home"           />
-          <Stack.Screen name="comunidade"     />
-          <Stack.Screen name="pesquisar"      />
-          <Stack.Screen name="notificacao"    />
-          <Stack.Screen name="criarraid"      />
-          <Stack.Screen name="perfil"         />
-          <Stack.Screen name="config"         />
-          <Stack.Screen name="guilda"         />
-          <Stack.Screen name="amigos"         />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="cadastro" />
+          <Stack.Screen name="telaJogo" />
+          <Stack.Screen name="comunidade" />
+          <Stack.Screen name="pesquisar" />
+          <Stack.Screen name="notificacao" />
+          <Stack.Screen name="criarraid" />
+          <Stack.Screen name="perfil" />
+          <Stack.Screen name="config" />
+          <Stack.Screen name="guilda" />
+          <Stack.Screen name="amigos" />
         </Stack>
       </AuthProvider>
     </SafeAreaProvider>
