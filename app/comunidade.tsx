@@ -42,7 +42,7 @@ export default function Comunidade() {
   const [guildas, setGuildas] = useState<GuildaAPI[]>([]);
   const [busca, setBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [amigosIds, setAmigosIds] = useState<string[]>([]); // IDs dos amigos
+  const [amigosIds, setAmigosIds] = useState<string[]>([]);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,7 +53,6 @@ export default function Comunidade() {
   const carregarDados = async () => {
     setCarregando(true);
     try {
-      // Buscar usuários, guildas e amizades do usuário logado
       const [usuariosRes, guildasRes, amizadesRes] = await Promise.all([
         api.get("/usuarios"),
         api.get("/guildas"),
@@ -62,14 +61,9 @@ export default function Comunidade() {
           : Promise.resolve({ data: [] }),
       ]);
 
-      // Filtra o próprio usuário da lista
-      setUsuarios(
-        usuariosRes.data.filter((u: UsuarioAPI) => u.id !== user?.id),
-      );
-      setGuildas(guildasRes.data);
-
-      // Extrai os IDs dos amigos (amizades com status ACEITO)
       const amizades = amizadesRes.data || [];
+
+      // Extrai apenas amizades aceitas
       const amigos = amizades
         .filter((amz: any) => amz.status === "ACEITO")
         .map((amz: any) =>
@@ -77,7 +71,17 @@ export default function Comunidade() {
             ? amz.destinatario.id
             : amz.solicitante.id,
         );
+
       setAmigosIds(amigos);
+
+      // Filtra apenas os amigos da lista de usuários
+      setUsuarios(
+        usuariosRes.data.filter(
+          (u: UsuarioAPI) => u.id !== user?.id && amigos.includes(u.id),
+        ),
+      );
+
+      setGuildas(guildasRes.data);
     } catch (err) {
       console.log("Erro ao carregar comunidade:", err);
     } finally {
@@ -93,37 +97,29 @@ export default function Comunidade() {
     g.nome.toLowerCase().includes(busca.toLowerCase()),
   );
 
-  const renderUsuario = ({ item }: { item: UsuarioAPI }) => {
-    const isAmigo = amigosIds.includes(item.id);
-    return (
-      <TouchableOpacity
-        style={[estilos.card, isAmigo && estilos.cardAmigo]}
-        onPress={() => router.push(`/detalhes/usuario/${item.id}`)}
-      >
-        <View style={estilos.avatarCirculo}>
-          {item.fotoPerfil ? (
-            <Image
-              source={{ uri: item.fotoPerfil }}
-              style={estilos.avatarImg}
-            />
-          ) : (
-            <Ionicons name="person" size={26} color="#E8D5A3" />
-          )}
-        </View>
-        <View style={estilos.cardInfo}>
-          <Text style={estilos.cardNome}>{item.nick}</Text>
-          <Text style={estilos.cardSub} numberOfLines={1}>
-            {item.bio || "Sem bio"}
-          </Text>
-        </View>
-        {isAmigo && (
-          <View style={estilos.amigoIndicator}>
-            <Ionicons name="star" size={14} color="#D4AF37" />
-          </View>
+  const renderUsuario = ({ item }: { item: UsuarioAPI }) => (
+    <TouchableOpacity
+      style={[estilos.card, estilos.cardAmigo]}
+      onPress={() => router.push(`/detalhes/usuario/${item.id}`)}
+    >
+      <View style={estilos.avatarCirculo}>
+        {item.fotoPerfil ? (
+          <Image source={{ uri: item.fotoPerfil }} style={estilos.avatarImg} />
+        ) : (
+          <Ionicons name="person" size={26} color="#E8D5A3" />
         )}
-      </TouchableOpacity>
-    );
-  };
+      </View>
+      <View style={estilos.cardInfo}>
+        <Text style={estilos.cardNome}>{item.nick}</Text>
+        <Text style={estilos.cardSub} numberOfLines={1}>
+          {item.bio || "Sem bio"}
+        </Text>
+      </View>
+      <View style={estilos.amigoIndicator}>
+        <Ionicons name="star" size={14} color="#D4AF37" />
+      </View>
+    </TouchableOpacity>
+  );
 
   const renderGuilda = ({ item }: { item: GuildaAPI }) => (
     <View style={estilos.card}>
@@ -159,41 +155,20 @@ export default function Comunidade() {
         <View style={estilos.abas}>
           <TouchableOpacity
             style={[estilos.aba, aba === "usuarios" && estilos.abaAtiva]}
-            onPress={() => {
-              setAba("usuarios");
-              setBusca("");
-            }}
+            onPress={() => { setAba("usuarios"); setBusca(""); }}
           >
-            <Ionicons
-              name="people"
-              size={16}
-              color={aba === "usuarios" ? "#1a1008" : "#E8D5A3"}
-            />
-            <Text
-              style={[
-                estilos.abaTxt,
-                aba === "usuarios" && estilos.abaTxtAtiva,
-              ]}
-            >
-              Usuários
+            <Ionicons name="people" size={16} color={aba === "usuarios" ? "#1a1008" : "#E8D5A3"} />
+            <Text style={[estilos.abaTxt, aba === "usuarios" && estilos.abaTxtAtiva]}>
+              Amigos
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[estilos.aba, aba === "guildas" && estilos.abaAtiva]}
-            onPress={() => {
-              setAba("guildas");
-              setBusca("");
-            }}
+            onPress={() => { setAba("guildas"); setBusca(""); }}
           >
-            <Ionicons
-              name="shield"
-              size={16}
-              color={aba === "guildas" ? "#1a1008" : "#E8D5A3"}
-            />
-            <Text
-              style={[estilos.abaTxt, aba === "guildas" && estilos.abaTxtAtiva]}
-            >
+            <Ionicons name="shield" size={16} color={aba === "guildas" ? "#1a1008" : "#E8D5A3"} />
+            <Text style={[estilos.abaTxt, aba === "guildas" && estilos.abaTxtAtiva]}>
               Guildas
             </Text>
           </TouchableOpacity>
@@ -204,9 +179,7 @@ export default function Comunidade() {
           <Ionicons name="search-outline" size={18} color="#888" />
           <TextInput
             style={estilos.input}
-            placeholder={
-              aba === "usuarios" ? "Buscar usuário..." : "Buscar guilda..."
-            }
+            placeholder={aba === "usuarios" ? "Buscar amigo..." : "Buscar guilda..."}
             placeholderTextColor="#888"
             value={busca}
             onChangeText={setBusca}
@@ -221,27 +194,17 @@ export default function Comunidade() {
 
         {/* CONTEÚDO */}
         {carregando ? (
-          <ActivityIndicator
-            size="large"
-            color="#D4AF37"
-            style={{ marginTop: 40 }}
-          />
+          <ActivityIndicator size="large" color="#D4AF37" style={{ marginTop: 40 }} />
         ) : aba === "usuarios" ? (
           <FlatList
             data={usuariosFiltrados}
             keyExtractor={(item) => item.id}
             renderItem={renderUsuario}
-            contentContainerStyle={{
-              gap: 10,
-              paddingBottom: 120,
-              paddingTop: 10,
-            }}
+            contentContainerStyle={{ gap: 10, paddingBottom: 120, paddingTop: 10 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <Text style={estilos.vazio}>
-                {busca
-                  ? "Nenhum usuário encontrado"
-                  : "Nenhum usuário cadastrado"}
+                {busca ? "Nenhum amigo encontrado" : "Você ainda não tem amigos adicionados"}
               </Text>
             }
           />
@@ -250,17 +213,11 @@ export default function Comunidade() {
             data={guildasFiltradas}
             keyExtractor={(item) => item.id}
             renderItem={renderGuilda}
-            contentContainerStyle={{
-              gap: 10,
-              paddingBottom: 120,
-              paddingTop: 10,
-            }}
+            contentContainerStyle={{ gap: 10, paddingBottom: 120, paddingTop: 10 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
               <Text style={estilos.vazio}>
-                {busca
-                  ? "Nenhuma guilda encontrada"
-                  : "Nenhuma guilda cadastrada"}
+                {busca ? "Nenhuma guilda encontrada" : "Nenhuma guilda cadastrada"}
               </Text>
             }
           />
