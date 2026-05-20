@@ -33,7 +33,7 @@ export default function Login() {
       await signIn(emailOrUser.trim(), senha);
       router.replace("/");
     } catch (e) {
-      Alert.alert("Erro", "Não foi possível fazer login. Verifique suas credenciais.");
+      Alert.alert("Erro", "Não foi possível fazer login. e-mail ou senha incorretos.");
     } finally {
       setCarregando(false);
     }

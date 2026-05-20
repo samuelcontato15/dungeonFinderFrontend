@@ -18,46 +18,163 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 
+// ─── Tipos ────────────────────────────────────────────────────────────────────
+type CamposErro = {
+  usuario?: string;
+  email?: string;
+  senha?: string;
+  confirmarSenha?: string;
+};
+
+// ─── Helpers de validação ─────────────────────────────────────────────────────
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validarEmail(email: string): string | undefined {
+  if (!email.trim()) return "Informe o e-mail.";
+  if (!REGEX_EMAIL.test(email.trim())) return "E-mail inválido.";
+}
+
+function validarCampos(
+  usuario: string,
+  email: string,
+  senha: string,
+  confirmarSenha: string
+): CamposErro {
+  const erros: CamposErro = {};
+
+  if (!usuario.trim()) erros.usuario = "Escolha um nome de herói.";
+  else if (usuario.trim().length < 4) erros.usuario = "O nick deve ter pelo menos 4 caracteres.";
+
+  const erroEmail = validarEmail(email);
+  if (erroEmail) erros.email = erroEmail;
+
+  if (!senha) {
+    erros.senha = "Informe a senha.";
+  } else if (senha.length < 6) {
+    erros.senha = "Mínimo de 6 caracteres.";
+  }
+
+  if (!confirmarSenha) {
+    erros.confirmarSenha = "Confirme a senha.";
+  } else if (senha !== confirmarSenha) {
+    erros.confirmarSenha = "As senhas não coincidem.";
+  }
+
+  return erros;
+}
+
+// ─── Detecta se o erro retornado pela API é de e-mail duplicado ───────────────
+function isEmailDuplicado(e: any): boolean {
+  const status = e?.response?.status;
+  const data   = e?.response?.data;
+  const msg    = (e?.message ?? "").toLowerCase();
+
+  // Ajuste as condições conforme o contrato da sua API
+  if (status === 409) return true;
+  if (status === 422 || status === 400) {
+    const body = JSON.stringify(data ?? "").toLowerCase();
+    if (body.includes("email") && (body.includes("already") || body.includes("duplicado") || body.includes("exists") || body.includes("em uso"))) return true;
+  }
+  if (msg.includes("email") && (msg.includes("already") || msg.includes("duplicado") || msg.includes("exists"))) return true;
+
+  return false;
+}
+
+// ─── Componente auxiliar de mensagem de erro ──────────────────────────────────
+function ErroTexto({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <View style={estilos.erroLinha}>
+      <Ionicons name="alert-circle-outline" size={13} color="#FF6B6B" />
+      <Text style={estilos.erroTexto}>{msg}</Text>
+    </View>
+  );
+}
+
+// ─── Tela principal ───────────────────────────────────────────────────────────
 export default function Cadastro() {
-  const router = useRouter();
-  const margens = useSafeAreaInsets();
+  const router   = useRouter();
+  const margens  = useSafeAreaInsets();
   const { signUp } = useAuth();
 
-  const [usuario, setUsuario]             = useState("");
-  const [email, setEmail]                 = useState("");
-  const [senha, setSenha]                 = useState("");
+  const [usuario, setUsuario]               = useState("");
+  const [email, setEmail]                   = useState("");
+  const [senha, setSenha]                   = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [mostrarSenha, setMostrarSenha]   = useState(false);
-  const [carregando, setCarregando]       = useState(false);
+  const [mostrarSenha, setMostrarSenha]     = useState(false);
+  const [carregando, setCarregando]         = useState(false);
+  const [erros, setErros]                   = useState<CamposErro>({});
+
+  // Valida um campo individual ao sair do foco (onBlur)
+  function validarCampo(campo: keyof CamposErro, valor: string) {
+    const novosErros = { ...erros };
+
+    switch (campo) {
+      case "usuario":
+        if (!valor.trim()) novosErros.usuario = "Escolha um nome de herói.";
+        else if (valor.trim().length < 4) novosErros.usuario = "O nick deve ter pelo menos 4 caracteres.";
+        else delete novosErros.usuario;
+        break;
+      case "email": {
+        const erroEmail = validarEmail(valor);
+        if (erroEmail) novosErros.email = erroEmail;
+        else delete novosErros.email;
+        break;
+      }
+      case "senha":
+        if (!valor) novosErros.senha = "Informe a senha.";
+        else if (valor.length < 6) novosErros.senha = "Mínimo de 6 caracteres.";
+        else delete novosErros.senha;
+        // Revalida confirmação se já foi tocada
+        if (confirmarSenha && valor !== confirmarSenha)
+          novosErros.confirmarSenha = "As senhas não coincidem.";
+        else if (confirmarSenha && valor === confirmarSenha)
+          delete novosErros.confirmarSenha;
+        break;
+      case "confirmarSenha":
+        if (!valor) novosErros.confirmarSenha = "Confirme a senha.";
+        else if (senha !== valor) novosErros.confirmarSenha = "As senhas não coincidem.";
+        else delete novosErros.confirmarSenha;
+        break;
+    }
+
+    setErros(novosErros);
+  }
 
   async function handleCadastrar() {
-    if (!usuario.trim() || !email.trim() || !senha || !confirmarSenha) {
-      Alert.alert("Atenção", "Preencha todos os campos.");
+    const novosErros = validarCampos(usuario, email, senha, confirmarSenha);
+
+    if (Object.keys(novosErros).length > 0) {
+      setErros(novosErros);
       return;
     }
-    if (senha !== confirmarSenha) {
-      Alert.alert("Atenção", "As senhas não coincidem.");
-      return;
-    }
-    if (senha.length < 6) {
-      Alert.alert("Atenção", "A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
+
     try {
       setCarregando(true);
       await signUp(usuario.trim(), email.trim(), senha);
       Alert.alert("Sucesso!", "Conta criada com sucesso!", [
         { text: "Entrar", onPress: () => router.replace("/") },
       ]);
-      } catch (e: any) {
-      Alert.alert(
-        "Erro detalhado",
-        `Status: ${e?.response?.status}\nMsg: ${e?.message}\nData: ${JSON.stringify(e?.response?.data)}`
-      );
+    } catch (e: any) {
+      if (isEmailDuplicado(e)) {
+        // Mostra o erro direto no campo, sem Alert
+        setErros((prev) => ({
+          ...prev,
+          email: "Este e-mail já está em uso.",
+        }));
+      } else {
+        Alert.alert(
+          "Erro ao cadastrar",
+          e?.response?.data?.message ?? e?.message ?? "Tente novamente mais tarde."
+        );
+      }
     } finally {
       setCarregando(false);
     }
   }
+
+  const inputBorda = (campo: keyof CamposErro) =>
+    erros[campo] ? estilos.inputErro : null;
 
   return (
     <ImageBackground
@@ -80,6 +197,7 @@ export default function Cadastro() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Voltar */}
           <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#D4AF37" />
             <Text style={estilos.btnVoltarTexto}>Voltar</Text>
@@ -87,65 +205,81 @@ export default function Cadastro() {
 
           <Text style={estilos.titulo}>Cadastro</Text>
 
+          {/* Usuário */}
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Usuário</Text>
             <TextInput
-              style={estilos.input}
+              style={[estilos.input, inputBorda("usuario")]}
               placeholder="Escolha um nome de herói"
               placeholderTextColor="#888"
               value={usuario}
-              onChangeText={setUsuario}
+              onChangeText={(v) => { setUsuario(v); if (erros.usuario) validarCampo("usuario", v); }}
+              onBlur={() => validarCampo("usuario", usuario)}
               autoCapitalize="none"
             />
+            <ErroTexto msg={erros.usuario} />
           </View>
 
-          
+          {/* Email */}
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Email</Text>
             <TextInput
-              style={estilos.input}
+              style={[estilos.input, inputBorda("email")]}
               placeholder="seu@email.com"
               placeholderTextColor="#888"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => { setEmail(v); if (erros.email) validarCampo("email", v); }}
+              onBlur={() => validarCampo("email", email)}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
+            <ErroTexto msg={erros.email} />
           </View>
 
+          {/* Senha */}
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Senha</Text>
-            <View style={estilos.inputRow}>
+            <View>
               <TextInput
-                style={[estilos.input, { flex: 1, marginBottom: 0 }]}
+                style={[estilos.input, estilos.senhaInput, inputBorda("senha")]}
                 placeholder="Mínimo 6 caracteres"
                 placeholderTextColor="#888"
                 value={senha}
-                onChangeText={setSenha}
+                onChangeText={(v) => { setSenha(v); if (erros.senha || erros.confirmarSenha) validarCampo("senha", v); }}
+                onBlur={() => validarCampo("senha", senha)}
                 secureTextEntry={!mostrarSenha}
               />
               <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={estilos.olho}>
                 <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color="#555" />
               </TouchableOpacity>
             </View>
+            <ErroTexto msg={erros.senha} />
           </View>
 
+          {/* Confirmar senha */}
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Confirmar senha</Text>
             <TextInput
-              style={estilos.input}
+              style={[estilos.input, inputBorda("confirmarSenha")]}
               placeholder="Repita a senha"
               placeholderTextColor="#888"
               value={confirmarSenha}
-              onChangeText={setConfirmarSenha}
+              onChangeText={(v) => { setConfirmarSenha(v); if (erros.confirmarSenha) validarCampo("confirmarSenha", v); }}
+              onBlur={() => validarCampo("confirmarSenha", confirmarSenha)}
               secureTextEntry={!mostrarSenha}
             />
+            <ErroTexto msg={erros.confirmarSenha} />
           </View>
 
+          {/* Botão */}
           <TouchableOpacity
-            style={[estilos.botao, carregando && { opacity: 0.7 }]}
+            style={[
+              estilos.botao,
+              (carregando || !usuario || !email || !senha || !confirmarSenha) && { opacity: 0.5 },
+            ]}
             onPress={handleCadastrar}
-            disabled={carregando}
+            disabled={carregando || !usuario || !email || !senha || !confirmarSenha}
             activeOpacity={0.8}
           >
             {carregando
@@ -156,7 +290,7 @@ export default function Cadastro() {
 
           <View style={estilos.loginLinha}>
             <Text style={estilos.loginTexto}>Já tem conta? </Text>
-            <TouchableOpacity onPress={() => router.replace("/")}>
+            <TouchableOpacity onPress={() => router.replace("/login")}>
               <Text style={estilos.loginLink}>Entrar</Text>
             </TouchableOpacity>
           </View>
@@ -166,6 +300,7 @@ export default function Cadastro() {
   );
 }
 
+// ─── Estilos ──────────────────────────────────────────────────────────────────
 const estilos = StyleSheet.create({
   fundo: { flex: 1 },
   overlay: {
@@ -194,7 +329,7 @@ const estilos = StyleSheet.create({
     textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 4,
   },
-  campoWrapper: { gap: 6 },
+  campoWrapper: { gap: 4 },
   label: {
     color: "#E8D5A3",
     fontSize: 13,
@@ -208,15 +343,32 @@ const estilos = StyleSheet.create({
     paddingVertical: 13,
     fontSize: 14,
     color: "#1a1008",
+    borderWidth: 1.5,
+    borderColor: "transparent",
   },
-  inputRow: {
+  inputErro: {
+    borderColor: "#FF6B6B",
+  },
+  senhaInput: {
+    paddingRight: 46,
+  },
+  olho: {
+    position: "absolute",
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  erroLinha: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(232,213,163,0.85)",
-    borderRadius: 8,
-    paddingHorizontal: 14,
+    gap: 4,
+    marginTop: 2,
   },
-  olho: { paddingLeft: 8 },
+  erroTexto: {
+    color: "#FF6B6B",
+    fontSize: 12,
+  },
   botao: {
     backgroundColor: "#D4AF37",
     paddingVertical: 15,
