@@ -479,7 +479,12 @@ export default function TelaJogo() {
               <Text style={estilos.textoVazio}>Nenhuma guilda encontrada.</Text>
             ) : (
               guildas.map((guilda) => (
-                <View key={guilda.id} style={estilos.cardGuilda}>
+                <TouchableOpacity
+                  key={guilda.id}
+                  style={estilos.cardGuilda}
+                  activeOpacity={0.8}
+                  onPress={() => router.push(`/detalhes/guilda/${guilda.id}` as any)}
+                >
                   {guilda.banner ? (
                     <Image source={{ uri: guilda.banner }} style={estilos.imagemGuilda} />
                   ) : (
@@ -491,8 +496,8 @@ export default function TelaJogo() {
                     <Text style={estilos.nomeGuilda}>{guilda.nome}</Text>
                     <Text style={estilos.descricaoGuilda} numberOfLines={2}>{guilda.descricao}</Text>
                   </View>
-                
-                </View>
+                  <Ionicons name="chevron-forward" size={20} color="#D4AF37" />
+                </TouchableOpacity>
               ))
             )}
           </Secao>

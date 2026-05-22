@@ -44,6 +44,7 @@ function validarCampos(
 
   if (!usuario.trim()) erros.usuario = "Escolha um nome de herói.";
   else if (usuario.trim().length < 4) erros.usuario = "O nick deve ter pelo menos 4 caracteres.";
+  else if (usuario.trim().length > 15) erros.usuario = "O nick não pode ter mais de 15 caracteres.";
 
   const erroEmail = validarEmail(email);
   if (erroEmail) erros.email = erroEmail;
@@ -113,6 +114,7 @@ export default function Cadastro() {
       case "usuario":
         if (!valor.trim()) novosErros.usuario = "Escolha um nome de herói.";
         else if (valor.trim().length < 4) novosErros.usuario = "O nick deve ter pelo menos 4 caracteres.";
+        else if (valor.trim().length > 15) novosErros.usuario = "O nick não pode ter mais de 15 caracteres.";
         else delete novosErros.usuario;
         break;
       case "email": {
@@ -216,6 +218,7 @@ export default function Cadastro() {
               onChangeText={(v) => { setUsuario(v); if (erros.usuario) validarCampo("usuario", v); }}
               onBlur={() => validarCampo("usuario", usuario)}
               autoCapitalize="none"
+              maxLength={15}
             />
             <ErroTexto msg={erros.usuario} />
           </View>

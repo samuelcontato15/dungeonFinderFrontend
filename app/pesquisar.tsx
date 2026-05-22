@@ -21,7 +21,7 @@ type Jogo = { id: string; nome: string; capa: string | null };
 type Usuario = { id: string; nick: string; fotoPerfil: string | null; bio: string | null };
 type Guilda = { id: string; nome: string; banner: string | null; descricao: string | null };
 
-type Resultados = {
+type Dados = {
   jogos: Jogo[];
   usuarios: Usuario[];
   guildas: Guilda[];
@@ -58,47 +58,52 @@ export default function Pesquisar() {
   const refEntrada = useRef<TextInput>(null);
 
   const [busca, setBusca] = useState("");
-  const [resultados, setResultados] = useState<Resultados | null>(null);
-  const [carregando, setCarregando] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [dados, setDados] = useState<Dados | null>(null);
+  const [carregando, setCarregando] = useState(true);
 
+  // Busca todos os dados ao montar a tela
   useEffect(() => {
     const t = setTimeout(() => refEntrada.current?.focus(), 100);
+
+    async function carregarDados() {
+      try {
+        const [jogosRes, usuariosRes, guildasRes] = await Promise.all([
+          api.get("/jogos"),
+          api.get("/usuarios"),
+          api.get("/guildas"),
+        ]);
+        setDados({
+          jogos: jogosRes.data as Jogo[],
+          usuarios: usuariosRes.data as Usuario[],
+          guildas: guildasRes.data as Guilda[],
+        });
+      } catch (err) {
+        console.log("Erro ao carregar dados:", err);
+      } finally {
+        setCarregando(false);
+      }
+    }
+
+    carregarDados();
     return () => clearTimeout(t);
   }, []);
 
-  const pesquisar = useCallback(async (termo: string) => {
-    if (!termo.trim()) { setResultados(null); return; }
-    try {
-      setCarregando(true);
-      const [jogosRes, usuariosRes, guildasRes] = await Promise.all([
-        api.get("/jogos"),
-        api.get("/usuarios"),
-        api.get("/guildas"),
-      ]);
+  // Filtragem local, sem debounce necessário pois é síncrona
+  const filtrar = useCallback((termo: string): Dados | null => {
+    if (!dados) return null;
+    const t = termo.toLowerCase();
+    return {
+      jogos: dados.jogos.filter(j => j.nome.toLowerCase().includes(t)),
+      usuarios: dados.usuarios.filter(u =>
+        u.nick.toLowerCase().includes(t) || (u.bio ?? "").toLowerCase().includes(t)
+      ),
+      guildas: dados.guildas.filter(g =>
+        g.nome.toLowerCase().includes(t) || (g.descricao ?? "").toLowerCase().includes(t)
+      ),
+    };
+  }, [dados]);
 
-      const t = termo.toLowerCase();
-      setResultados({
-        jogos: (jogosRes.data as Jogo[]).filter(j => j.nome.toLowerCase().includes(t)),
-        usuarios: (usuariosRes.data as Usuario[]).filter(u =>
-          u.nick.toLowerCase().includes(t) || (u.bio ?? "").toLowerCase().includes(t)
-        ),
-        guildas: (guildasRes.data as Guilda[]).filter(g =>
-          g.nome.toLowerCase().includes(t) || (g.descricao ?? "").toLowerCase().includes(t)
-        ),
-      });
-    } catch (err) {
-      console.log("Erro ao pesquisar:", err);
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
-
-  function handleBusca(texto: string) {
-    setBusca(texto);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => pesquisar(texto), 400);
-  }
+  const resultados = busca.trim() ? filtrar(busca) : dados;
 
   const semResultados =
     resultados &&
@@ -127,14 +132,14 @@ export default function Pesquisar() {
             placeholder="Buscar jogos, guildas, jogadores…"
             placeholderTextColor="#888"
             value={busca}
-            onChangeText={handleBusca}
+            onChangeText={setBusca}
             style={estilos.entradaBusca}
             returnKeyType="search"
             autoCorrect={false}
             autoCapitalize="none"
           />
           {busca.length > 0 && (
-            <TouchableOpacity onPress={() => { setBusca(""); setResultados(null); }}>
+            <TouchableOpacity onPress={() => setBusca("")}>
               <Ionicons name="close-circle" size={18} color="#aaa" />
             </TouchableOpacity>
           )}
@@ -148,10 +153,6 @@ export default function Pesquisar() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {busca.length === 0 && (
-          <Text style={estilos.textoVazio}>Digite para pesquisar…</Text>
-        )}
-
         {carregando && (
           <ActivityIndicator color="#D4AF37" style={{ marginTop: 40 }} />
         )}
@@ -188,34 +189,7 @@ export default function Pesquisar() {
             />
 
             <SecaoResultados
-              titulo="JOGADORES"
-              icone="person-outline"
-              itens={resultados.usuarios}
-              renderItem={(usuario: Usuario) => (
-                <TouchableOpacity
-                  style={estilos.card}
-                  onPress={() => roteador.push(`/detalhes/usuario/${usuario.id}` as any)}
-                >
-                  <View style={estilos.avatar}>
-                    {usuario.fotoPerfil ? (
-                      <Image source={{ uri: usuario.fotoPerfil }} style={estilos.avatarImg} />
-                    ) : (
-                      <Ionicons name="person" size={22} color="#D4AF37" />
-                    )}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={estilos.cardNome}>{usuario.nick}</Text>
-                    {usuario.bio && (
-                      <Text style={estilos.cardSub} numberOfLines={1}>{usuario.bio}</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color="#555" />
-                </TouchableOpacity>
-              )}
-            />
-
-            <SecaoResultados
-              titulo="GUILDAS"
+              titulo="GUILDAS"  // ← veio para cá
               icone="shield-outline"
               itens={resultados.guildas}
               renderItem={(guilda: Guilda) => (
@@ -234,6 +208,33 @@ export default function Pesquisar() {
                     <Text style={estilos.cardNome}>{guilda.nome}</Text>
                     {guilda.descricao && (
                       <Text style={estilos.cardSub} numberOfLines={1}>{guilda.descricao}</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="#555" />
+                </TouchableOpacity>
+              )}
+            />
+
+            <SecaoResultados
+              titulo="JOGADORES"  // ← foi para cá
+              icone="person-outline"
+              itens={resultados.usuarios}
+              renderItem={(usuario: Usuario) => (
+                <TouchableOpacity
+                  style={estilos.card}
+                  onPress={() => roteador.push(`/detalhes/usuario/${usuario.id}` as any)}
+                >
+                  <View style={estilos.avatar}>
+                    {usuario.fotoPerfil ? (
+                      <Image source={{ uri: usuario.fotoPerfil }} style={estilos.avatarImg} />
+                    ) : (
+                      <Ionicons name="person" size={22} color="#D4AF37" />
+                    )}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={estilos.cardNome}>{usuario.nick}</Text>
+                    {usuario.bio && (
+                      <Text style={estilos.cardSub} numberOfLines={1}>{usuario.bio}</Text>
                     )}
                   </View>
                   <Ionicons name="chevron-forward" size={16} color="#555" />

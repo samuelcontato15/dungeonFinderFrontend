@@ -45,7 +45,7 @@ export default function Comunidade() {
       const [usuariosRes, amizadesRes, guildasRes] = await Promise.all([
         api.get("/usuarios"),
         user?.id ? api.get(`/amizades/usuario/${user.id}`) : Promise.resolve({ data: [] }),
-        api.get("/guildas") // <--- ROTA GERAL PARA LISTAR TODAS
+        user?.id ? api.get(`/guildas/usuario/${user.id}`) : Promise.resolve({ data: [] })
       ]);
 
       // Processa amigos

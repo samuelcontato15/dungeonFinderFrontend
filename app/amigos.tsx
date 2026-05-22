@@ -37,7 +37,6 @@ export default function Amigos() {
   const router = useRouter();
   const { user } = useAuth();
   
- 
   const { guildaId } = useLocalSearchParams<{ guildaId?: string }>();
 
   const [busca, setBusca] = useState("");
@@ -48,19 +47,26 @@ export default function Amigos() {
   const [adicionados, setAdicionados] = useState<string[]>([]);
 
   useEffect(() => {
-    carregarAmizades();
+    carregarDadosIniciais();
   }, []);
 
-  async function carregarAmizades() {
+  async function carregarDadosIniciais() {
     if (!user?.id) return;
     try {
-      const response = await api.get<Amizade[]>(`/amizades/usuario/${user.id}`);
-      const ids = response.data.map((amz) =>
+      const [aceitasRes, enviadasRes] = await Promise.all([
+        api.get<Amizade[]>(`/amizades/usuario/${user.id}`),
+        api.get<Amizade[]>(`/amizades/usuario/${user.id}/enviadas`)
+      ]);
+
+      const idsAceitos = aceitasRes.data.map((amz) =>
         amz.solicitante.id === user.id ? amz.destinatario.id : amz.solicitante.id
       );
-      setAmizades(ids);
+      setAmizades(idsAceitos);
+
+      const idsEnviados = enviadasRes.data.map((amz) => amz.destinatario.id);
+      setAdicionados(idsEnviados);
     } catch (e) {
-      console.log("Erro ao carregar amizades", e);
+      console.log("Erro ao carregar dados", e);
     }
   }
 
@@ -90,86 +96,48 @@ export default function Amigos() {
   }
 
   async function handleAdicionar(destinatarioId: string) {
-  if (!user?.id) {
-    Alert.alert("Erro", "Usuário não identificado.");
-    return;
-  }
-
-  try {
-    setAdicionando(destinatarioId);
-
-    if (guildaId) {
-
-      console.log("ENVIANDO CONVITE GUILDA");
-      console.log("guildaId:", guildaId);
-      console.log("destinatarioId:", destinatarioId);
-
-      const response = await api.post(
-        `/guildas/${guildaId}/membros/${destinatarioId}/convidar`,
-        {},
-        {
-          headers: {
-            "X-Usuario-Id": user.id,
-          },
-        }
-      );
-
-      console.log("SUCESSO:", response.data);
-
-      Alert.alert(
-        "Convite enviado!",
-        "Pedido para entrar na guilda enviado."
-      );
-
-    } else {
-
-      console.log("ENVIANDO AMIZADE");
-
-      const response = await api.post(
-        `/amizades?destinatarioId=${destinatarioId}`,
-        {},
-        {
-          headers: {
-            "X-Usuario-Id": user.id,
-          },
-        }
-      );
-
-      console.log("SUCESSO:", response.data);
-
-      Alert.alert(
-        "Solicitação enviada!",
-        "Pedido de amizade enviado com sucesso."
-      );
+    if (!user?.id) {
+      Alert.alert("Erro", "Usuário não identificado.");
+      return;
     }
 
-    setAdicionados((prev) => [...prev, destinatarioId]);
+    try {
+      setAdicionando(destinatarioId);
 
-  } catch (error: any) {
+      if (guildaId) {
+        await api.post(
+          `/guildas/${guildaId}/membros/${destinatarioId}/convidar`,
+          {},
+          {
+            headers: {
+              ...api.defaults.headers.common,
+              "X-Usuario-Id": user.id,
+            },
+          }
+        );
+        Alert.alert("Convite enviado!", "Pedido para entrar na guilda enviado.");
+      } else {
+        await api.post(
+          `/amizades?destinatarioId=${destinatarioId}`,
+          {},
+          {
+            headers: {
+              ...api.defaults.headers.common,
+              "X-Usuario-Id": user.id,
+            },
+          }
+        );
+        Alert.alert("Solicitação enviada!", "Pedido de amizade enviado com sucesso.");
+      }
 
-    console.log("ERRO COMPLETO:");
-    console.log(error);
-
-    console.log("STATUS:");
-    console.log(error?.response?.status);
-
-    console.log("DATA:");
-    console.log(error?.response?.data);
-
-    console.log("MESSAGE:");
-    console.log(error?.message);
-
-    Alert.alert(
-      "Erro",
-      JSON.stringify(error?.response?.data) ||
-      error?.message ||
-      "Não foi possível enviar a solicitação."
-    );
-
-  } finally {
-    setAdicionando(null);
+      setAdicionados((prev) => [...prev, destinatarioId]);
+    } catch (error: any) {
+      Alert.alert("Erro", error?.response?.data?.message || "Não foi possível enviar a solicitação.");
+    } finally {
+      setAdicionando(null);
+    }
   }
-}
+
   return (
     <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo} resizeMode="cover">
       <View style={estilos.overlay} />
@@ -181,7 +149,6 @@ export default function Amigos() {
           <Text style={estilos.btnVoltarTexto}>Voltar</Text>
         </TouchableOpacity>
 
-        {/* O título muda dinamicamente dependendo de onde o usuário veio */}
         <Text style={estilos.titulo}>
           {guildaId ? "Convidar para Guilda" : "Buscar Amigos"}
         </Text>
@@ -220,8 +187,6 @@ export default function Amigos() {
           renderItem={({ item }) => {
             const jaAdicionado = adicionados.includes(item.id);
             const esteAdicionando = adicionando === item.id;
-            
-            // Se for convite de guilda, ignoramos a verificação de "já é amigo" no botão
             const jaEhAmigo = !guildaId && amizades.includes(item.id);
 
             return (
@@ -238,11 +203,7 @@ export default function Amigos() {
 
                 <View style={estilos.cardInfo}>
                   <Text style={estilos.cardNick}>{item.nick}</Text>
-                  {item.bio ? (
-                    <Text style={estilos.cardBio} numberOfLines={1}>{item.bio}</Text>
-                  ) : (
-                    <Text style={estilos.cardBioVazio}>Sem bio</Text>
-                  )}
+                  {item.bio ? <Text style={estilos.cardBio} numberOfLines={1}>{item.bio}</Text> : <Text style={estilos.cardBioVazio}>Sem bio</Text>}
                 </View>
 
                 {jaEhAmigo ? (
