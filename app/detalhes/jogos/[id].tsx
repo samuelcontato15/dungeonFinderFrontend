@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ImageBackground, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const fundosPorSlug: Record<string, any> = {
   "world-of-warcraft":        require("../../../assets/fundowow.png"),
@@ -10,16 +10,6 @@ const fundosPorSlug: Record<string, any> = {
   "dungeons-and-dragons":     require("../../../assets/fundoded.png"),
   "ordem-paranormal":         require("../../../assets/fundoop.png"),
   "tormenta":                 require("../../../assets/fundotormenta.png"),
-};
-
-const capasPorSlug: Record<string, any> = {
-  "world-of-warcraft":        require("../../../assets/wow.png"),
-  "albion-online":            require("../../../assets/ALBIONONLINE.png"),
-  "the-elder-scrolls-online": require("../../../assets/elder.png"),
-  "daggerheart":              require("../../../assets/dagger.png"),
-  "dungeons-and-dragons":     require("../../../assets/DeD.png"),
-  "ordem-paranormal":         require("../../../assets/rpgdocellbit.png"),
-  "tormenta":                 require("../../../assets/tormenta.png"),
 };
 
 interface Jogo {
@@ -69,7 +59,6 @@ export default function Detalhes() {
   }
 
   const imagemFundo = fundosPorSlug[jogo.slug];
-  const imagemCapa  = capasPorSlug[jogo.slug];
 
   return (
     <ImageBackground
@@ -81,7 +70,6 @@ export default function Detalhes() {
 
       <SafeAreaView style={[styles.safeContainer, { paddingTop: insets.top }]}>
         <View style={styles.headerBanner}>
-          <Image source={imagemCapa} style={styles.logoImage} />
         </View>
 
         <ScrollView

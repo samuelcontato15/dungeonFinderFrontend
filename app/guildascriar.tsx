@@ -29,8 +29,14 @@ export default function CriarGuilda() {
   const [bannerBase64, setBannerBase64] = useState<string | null>(null);
   
   const [jogos, setJogos] = useState<any[]>([]);
-  const [jogoSelecionado, setJogoSelecionado] = useState<string>("");
+  const [jogosSelecionados, setJogosSelecionados] = useState<string[]>([]);
   const [carregando, setCarregando] = useState(false);
+
+  const toggleJogo = (id: string) => {
+    setJogosSelecionados(prev =>
+      prev.includes(id) ? prev.filter(j => j !== id) : [...prev, id]
+    );
+  };
 
   useEffect(() => {
     api.get("/jogos")
@@ -64,8 +70,8 @@ export default function CriarGuilda() {
   };
 
   const handleCriar = async () => {
-    if (!nome || !descricao || !jogoSelecionado) {
-      Alert.alert("Erro", "Preencha o nome, descrição e selecione um jogo.");
+    if (!nome || !descricao || jogosSelecionados.length === 0) {
+      Alert.alert("Erro", "Preencha o nome, descrição e selecione ao menos um jogo.");
       return;
     }
 
@@ -78,8 +84,9 @@ export default function CriarGuilda() {
         maxMembros: 100, // Valor padrão
       };
 
-      // Chama o endpoint de criar guilda mandando o ID do jogo pela URL (RequestParam)
-      const res = await api.post(`/guildas?jogoId=${jogoSelecionado}`, novaGuilda, {
+      // Chama o endpoint de criar guilda mandando os IDs dos jogos pela URL (RequestParam)
+      const jogosParam = jogosSelecionados.join(",");
+      const res = await api.post(`/guildas?jogoId=${jogosParam}`, novaGuilda, {
         headers: { "X-Usuario-Id": user?.id },
       });
 
@@ -138,15 +145,15 @@ router.replace(`/detalhes/guilda/${res.data.id}`);    } catch (error: any) {
           onChangeText={setDescricao} 
         />
 
-        <Text style={estilos.label}>Selecione o Jogo</Text>
+        <Text style={estilos.label}>Selecione os Jogos</Text>
         <View style={estilos.jogosContainer}>
           {jogos.map((j) => (
             <TouchableOpacity 
               key={j.id} 
-              style={[estilos.jogoBtn, jogoSelecionado === j.id && estilos.jogoBtnAtivo]} 
-              onPress={() => setJogoSelecionado(j.id)}
+              style={[estilos.jogoBtn, jogosSelecionados.includes(j.id) && estilos.jogoBtnAtivo]} 
+              onPress={() => toggleJogo(j.id)}
             >
-              <Text style={[estilos.jogoTxt, jogoSelecionado === j.id && estilos.jogoTxtAtivo]}>
+              <Text style={[estilos.jogoTxt, jogosSelecionados.includes(j.id) && estilos.jogoTxtAtivo]}>
                 {j.nome}
               </Text>
             </TouchableOpacity>
