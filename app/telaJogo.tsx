@@ -474,9 +474,9 @@ export default function TelaJogo() {
           </Secao>
 
           {/* GUILDAS */}
-          <Secao titulo="PERSONAGENS DA COMUNIDADE">
+          <Secao titulo="GUILDAS DISPONÍVEIS">
             {guildas.length === 0 ? (
-              <Text style={estilos.textoVazio}>Nenhum personagem encontrado.</Text>
+              <Text style={estilos.textoVazio}>Nenhuma guilda encontrada.</Text>
             ) : (
               guildas.map((guilda) => (
                 <View key={guilda.id} style={estilos.cardGuilda}>
@@ -491,7 +491,7 @@ export default function TelaJogo() {
                     <Text style={estilos.nomeGuilda}>{guilda.nome}</Text>
                     <Text style={estilos.descricaoGuilda} numberOfLines={2}>{guilda.descricao}</Text>
                   </View>
-                  <Ionicons name="thumbs-up" size={24} color="#49d15c" />
+                
                 </View>
               ))
             )}
