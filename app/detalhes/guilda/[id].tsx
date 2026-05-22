@@ -148,7 +148,6 @@ export default function DetalhesGuilda() {
               activeOpacity={0.8}
               onPress={() => router.push({ pathname: "/guildachat", params: { id } } as any)}
             >
-              <Text style={estilos.textoBalaoHeader}>Sejam Bem-vindos à nossa guilda! 🍺</Text>
               <Text style={estilos.textoBalaoCorpo}>{guilda.descricao}</Text>
             </TouchableOpacity>
           </View>

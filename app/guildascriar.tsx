@@ -50,7 +50,7 @@ export default function CriarGuilda() {
 
     // Abre a galeria
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [16, 9], // Formato de banner
       quality: 0.5, // Reduz um pouco a qualidade para não pesar o Base64 no banco

@@ -48,8 +48,12 @@ export default function PerfilPublico() {
   const [usuario, setUsuario] = useState<UsuarioPublico | null>(null);
   const [amigos, setAmigos] = useState<AmigoPublico[]>([]);
   const [amizadeId, setAmizadeId] = useState<string | null>(null);
+  
+  // Controle do status da amizade
+  const [relacionamento, setRelacionamento] = useState<"NENHUM" | "AMIGOS" | "ENVIADO" | "RECEBIDO">("NENHUM");
+  
   const [carregando, setCarregando] = useState(true);
-  const [removendo, setRemovendo] = useState(false);
+  const [processandoAcao, setProcessandoAcao] = useState(false);
 
   const [favoritosJogos, setFavoritosJogos] = useState<Jogo[]>([]);
   const [carregandoFavoritos, setCarregandoFavoritos] = useState(false);
@@ -74,17 +78,38 @@ export default function PerfilPublico() {
         );
       setAmigos(listaFormatada);
 
+      // Verifica a amizade com o usuário logado
       if (user?.id) {
-        const amizadesDoUsuario = await api.get(`/amizades/usuario/${user.id}`);
-        const amizade = amizadesDoUsuario.data.find(
+        // Busca tanto os amigos aceitos quanto os pendentes!
+        const [amizadesRes, pendentesRes] = await Promise.all([
+          api.get(`/amizades/usuario/${user.id}`),
+          api.get(`/amizades/usuario/${user.id}/pendentes`)
+        ]);
+
+        // Junta as duas listas para procurar o vínculo
+        const todasAmizades = [...amizadesRes.data, ...pendentesRes.data];
+
+        const amizade = todasAmizades.find(
           (amz: any) =>
-            amz.status === "ACEITO" &&
-            ((amz.solicitante.id === user.id &&
-              amz.destinatario.id === idFinal) ||
-              (amz.solicitante.id === idFinal &&
-                amz.destinatario.id === user.id)),
+            (amz.solicitante.id === user.id && amz.destinatario.id === idFinal) ||
+            (amz.solicitante.id === idFinal && amz.destinatario.id === user.id),
         );
-        if (amizade) setAmizadeId(amizade.id);
+        
+        if (amizade) {
+          setAmizadeId(amizade.id);
+          if (amizade.status === "ACEITO") {
+            setRelacionamento("AMIGOS");
+          } else if (amizade.status === "PENDENTE") {
+            if (amizade.solicitante.id === user.id) {
+              setRelacionamento("ENVIADO");
+            } else {
+              setRelacionamento("RECEBIDO");
+            }
+          }
+        } else {
+          setRelacionamento("NENHUM");
+          setAmizadeId(null);
+        }
       }
 
       await carregarFavoritos();
@@ -108,6 +133,26 @@ export default function PerfilPublico() {
     }
   };
 
+  // Função para adicionar amigo
+  const adicionarAmigo = async () => {
+    setProcessandoAcao(true);
+    try {
+      await api.post(`/amizades?destinatarioId=${idFinal}`, 
+        {}, 
+        { headers: { "X-Usuario-Id": user?.id } }
+      );
+      
+      // Muda o botão para "Pedido Enviado" imediatamente!
+      setRelacionamento("ENVIADO");
+      Alert.alert("Sucesso", "Pedido de amizade enviado!");
+      
+    } catch (error: any) {
+      Alert.alert("Erro", error?.response?.data?.message || "Não foi possível enviar o pedido de amizade.");
+    } finally {
+      setProcessandoAcao(false);
+    }
+  };
+
   const removerAmizade = async () => {
     if (!amizadeId) return;
 
@@ -120,7 +165,7 @@ export default function PerfilPublico() {
           text: "Desfazer amizade",
           style: "destructive",
           onPress: async () => {
-            setRemovendo(true);
+            setProcessandoAcao(true);
             try {
               await api.delete(`/amizades/${amizadeId}`, {
                 headers: { "X-Usuario-Id": user?.id },
@@ -130,11 +175,12 @@ export default function PerfilPublico() {
                 "Você não é mais amigo dessa pessoa.",
               );
               setAmizadeId(null);
+              setRelacionamento("NENHUM");
               await carregarDados();
             } catch (error) {
               Alert.alert("Erro", "Não foi possível desfazer a amizade.");
             } finally {
-              setRemovendo(false);
+              setProcessandoAcao(false);
             }
           },
         },
@@ -158,7 +204,8 @@ export default function PerfilPublico() {
     );
   }
 
-  const isAmigo = !!amizadeId;
+  // Verifica se o usuário atual não está visualizando o próprio perfil
+  const isOutroUsuario = user?.id !== idFinal;
 
   return (
     <ImageBackground
@@ -207,22 +254,59 @@ export default function PerfilPublico() {
           </Text>
         </View>
 
-        {/* BOTÃO DESFAZER AMIZADE (se for amigo) */}
-        {isAmigo && (
-          <TouchableOpacity
-            style={estilos.botaoRemover}
-            onPress={removerAmizade}
-            disabled={removendo}
-          >
-            {removendo ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="trash-outline" size={18} color="#FFF" />
-                <Text style={estilos.txtBotaoRemover}>Desfazer amizade</Text>
-              </>
+        {/* CONTROLES DE AMIZADE (Só aparecem se não for o seu próprio perfil) */}
+        {isOutroUsuario && (
+          <View style={estilos.botoesContainer}>
+            
+            {relacionamento === "AMIGOS" && (
+              <TouchableOpacity
+                style={estilos.botaoRemover}
+                onPress={removerAmizade}
+                disabled={processandoAcao}
+              >
+                {processandoAcao ? (
+                  <ActivityIndicator size="small" color="#FFF" />
+                ) : (
+                  <>
+                    <Ionicons name="trash-outline" size={18} color="#FFF" />
+                    <Text style={estilos.txtBotaoRemover}>Desfazer amizade</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             )}
-          </TouchableOpacity>
+
+            {relacionamento === "NENHUM" && (
+              <TouchableOpacity
+                style={estilos.botaoAdicionar}
+                onPress={adicionarAmigo}
+                disabled={processandoAcao}
+              >
+                {processandoAcao ? (
+                  <ActivityIndicator size="small" color="#1a1008" />
+                ) : (
+                  <>
+                    <Ionicons name="person-add" size={18} color="#1a1008" />
+                    <Text style={estilos.txtBotaoAdicionar}>Adicionar Amigo</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {relacionamento === "ENVIADO" && (
+              <TouchableOpacity style={estilos.botaoPendente} disabled>
+                <Ionicons name="time-outline" size={18} color="#E8D5A3" />
+                <Text style={estilos.txtBotaoPendente}>Pedido Enviado</Text>
+              </TouchableOpacity>
+            )}
+
+            {relacionamento === "RECEBIDO" && (
+              <View style={estilos.botaoPendente}>
+                <Ionicons name="alert-circle-outline" size={18} color="#E8D5A3" />
+                <Text style={estilos.txtBotaoPendente}>Responda na aba de Pedidos</Text>
+              </View>
+            )}
+
+          </View>
         )}
 
         {/* AMIGOS */}
@@ -235,7 +319,10 @@ export default function PerfilPublico() {
               <TouchableOpacity
                 key={a.id}
                 style={estilos.itemAmigo}
-                onPress={() => router.push(`/detalhes/usuario/${a.id}`)}
+                onPress={() => {
+                  // Previne de tentar abrir o próprio perfil em loop, caso ele seja o amigo
+                  if (a.id !== idFinal) router.push(`/detalhes/usuario/${a.id}`);
+                }}
               >
                 <View style={estilos.avatarAmigo}>
                   {a.fotoPerfil ? (
@@ -356,6 +443,41 @@ const estilos = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  botoesContainer: {
+    marginBottom: 20,
+  },
+  botaoAdicionar: {
+    flexDirection: "row",
+    backgroundColor: "#D4AF37", // Dourado
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  txtBotaoAdicionar: {
+    color: "#1a1008",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  botaoPendente: {
+    flexDirection: "row",
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#E8D5A3",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  txtBotaoPendente: {
+    color: "#E8D5A3",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
   botaoRemover: {
     flexDirection: "row",
     backgroundColor: "#B00020",
@@ -365,7 +487,6 @@ const estilos = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    marginBottom: 20,
   },
   txtBotaoRemover: {
     color: "#FFF",
@@ -407,7 +528,6 @@ const estilos = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
-  // Estilos para os jogos favoritos (copiados do perfil.tsx)
   favoritos: {
     flexDirection: "row",
     flexWrap: "wrap",

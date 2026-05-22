@@ -56,7 +56,7 @@ export default function Comunidade() {
       // Busca todos os dados do backend simultaneamente
       const [usuariosRes, guildasRes, amizadesRes] = await Promise.all([
         api.get("/usuarios"),
-        api.get("/guildas"), // Lista todas as guildas criadas
+        api.get(`/guildas/usuario/${user?.id}`),
         user?.id ? api.get(`/amizades/usuario/${user.id}`) : Promise.resolve({ data: [] }),
       ]);
 
@@ -76,8 +76,8 @@ export default function Comunidade() {
         usuariosRes.data.filter((u: UsuarioAPI) => u.id !== user?.id && amigos.includes(u.id)),
       );
 
-      // Seta todas as guildas recebidas do banco de dados
-      setGuildas(guildasRes.data);
+      setGuildas(guildasRes.data || []);
+
     } catch (err) {
       console.log("Erro ao carregar comunidade:", err);
     } finally {
@@ -119,12 +119,12 @@ export default function Comunidade() {
 
   const renderGuilda = ({ item }: { item: GuildaAPI }) => (
     // Transformado em TouchableOpacity para abrir a tela da Guilda que fizemos
-   <TouchableOpacity 
-    style={estilos.card} 
-    activeOpacity={0.8}
-  
-    onPress={() => router.push(`/detalhes/guilda/${item.id}`)} 
-  >
+    <TouchableOpacity
+      style={estilos.card}
+      activeOpacity={0.8}
+
+      onPress={() => router.push(`/detalhes/guilda/${item.id}`)}
+    >
       <View style={estilos.avatarCirculo}>
         {item.banner ? (
           <Image source={{ uri: item.banner }} style={estilos.avatarImg} />
@@ -219,10 +219,10 @@ export default function Comunidade() {
         )}
       </View>
 
-  
+
       {aba === "guildas" && (
-        <TouchableOpacity 
-          style={[estilos.fab, { bottom: insets.bottom + 90 }]} 
+        <TouchableOpacity
+          style={[estilos.fab, { bottom: insets.bottom + 90 }]}
           activeOpacity={0.8}
           onPress={() => router.push("/guildascriar")}
         >
@@ -258,7 +258,7 @@ const estilos = StyleSheet.create({
   cardSub: { color: "#aaa", fontSize: 12 },
   amigoIndicator: { backgroundColor: "rgba(212,175,55,0.2)", borderRadius: 12, padding: 4 },
   vazio: { color: "#999", fontStyle: "italic", textAlign: "center", marginTop: 40 },
-  
+
   // Estilo do Botão de + (Floating Action Button)
   fab: {
     position: "absolute",

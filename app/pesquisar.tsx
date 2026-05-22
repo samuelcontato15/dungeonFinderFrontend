@@ -221,7 +221,7 @@ export default function Pesquisar() {
               renderItem={(guilda: Guilda) => (
                 <TouchableOpacity
                   style={estilos.card}
-                  onPress={() => roteador.push(`guilda/${guilda.id}` as any)}
+                  onPress={() => roteador.push(`/detalhes/guilda/${guilda.id}` as any)}
                 >
                   <View style={estilos.avatar}>
                     {guilda.banner ? (
