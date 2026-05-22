@@ -56,20 +56,16 @@ export default function DetalhesGuilda() {
   const isMembro = membros.some((m) => m.usuario?.id === user?.id);
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
 
-  async function handleJuntarSe() {
-     console.log("user?.id:", user?.id);
-    try {
-      await api.post(
-        `/guildas/${id}/membros/solicitar-entrada`,
-        {},
-        { headers: { "X-Usuario-Id": user?.id } }
-      );
-      setPedidoEnviado(true);
-      Alert.alert("Pedido enviado!", "Aguarde o líder aprovar.");
-    } catch (e: any) {
-      Alert.alert("Aviso", e?.response?.data?.message || "Erro ao enviar pedido.");
-    }
+async function handleJuntarSe() {
+  try {
+    
+    await api.post(`/guildas/${id}/membros/entrar`, {}, { headers: { "X-Usuario-Id": user?.id } });
+    Alert.alert("Sucesso", "Você entrou na guilda!");
+    carregarGuilda();
+  } catch (e: any) {
+    Alert.alert("Aviso", e?.response?.data?.message || "Erro ao entrar na guilda.");
   }
+}
 
 
   async function handleExpulsar() {
