@@ -1,5 +1,3 @@
-// src/models/types.ts
-
 export interface Jogo {
   id: string;
   titulo: string;

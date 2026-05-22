@@ -25,7 +25,7 @@ export default function DetalhesGuilda() {
   const router = useRouter();
   const { user } = useAuth();
 
-  const [guilda, setGuilda]   = useState<any>(null);
+  const [guilda, setGuilda] = useState<any>(null);
   const [membros, setMembros] = useState<any[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [membroSelecionado, setMembroSelecionado] = useState<any>(null);
@@ -52,21 +52,31 @@ export default function DetalhesGuilda() {
     }
   }
 
-  const isLider  = guilda?.criadoPor?.id === user?.id;
+  const isLider = guilda?.criadoPor?.id === user?.id;
   const isMembro = membros.some((m) => m.usuario?.id === user?.id);
+  const [pedidoEnviado, setPedidoEnviado] = useState(false);
 
   async function handleJuntarSe() {
+     console.log("user?.id:", user?.id);
     try {
-      await api.post(`/guildas/${id}/membros/solicitar-entrada`, {});
-      Alert.alert("Pedido enviado!", "O líder receberá sua solicitação e poderá aprovar.");
+      await api.post(
+        `/guildas/${id}/membros/solicitar-entrada`,
+        {},
+        { headers: { "X-Usuario-Id": user?.id } }
+      );
+      setPedidoEnviado(true);
+      Alert.alert("Pedido enviado!", "Aguarde o líder aprovar.");
     } catch (e: any) {
       Alert.alert("Aviso", e?.response?.data?.message || "Erro ao enviar pedido.");
     }
   }
 
+
   async function handleExpulsar() {
     try {
-      await api.delete(`/guildas/${id}/membros/${membroSelecionado.usuario.id}/expulsar`);
+      await api.delete(`/guildas/${id}/membros/${membroSelecionado.usuario.id}/expulsar`, {
+        headers: { "X-Usuario-Id": user?.id },
+      });
       setModalExpulsar(false);
       Alert.alert("Sucesso", "Membro expulso.");
       carregarGuilda();
@@ -180,8 +190,14 @@ export default function DetalhesGuilda() {
           </ScrollView>
 
           {!isMembro && (
-            <TouchableOpacity style={estilos.btnJuntar} onPress={handleJuntarSe}>
-              <Text style={estilos.btnJuntarTxt}>Juntar-se</Text>
+            <TouchableOpacity
+              style={[estilos.btnJuntar, pedidoEnviado && { opacity: 0.5 }]}
+              onPress={handleJuntarSe}
+              disabled={pedidoEnviado}
+            >
+              <Text style={estilos.btnJuntarTxt}>
+                {pedidoEnviado ? "Pedido enviado..." : "Juntar-se"}
+              </Text>
             </TouchableOpacity>
           )}
 
@@ -191,10 +207,14 @@ export default function DetalhesGuilda() {
               onPress={() =>
                 Alert.alert("Sair da guilda", "Tem certeza?", [
                   { text: "Cancelar", style: "cancel" },
-                  { text: "Sair", style: "destructive", onPress: async () => {
-                    await api.delete(`/guildas/${id}/membros/sair`);
-                    router.back();
-                  }},
+                  {
+                    text: "Sair", style: "destructive", onPress: async () => {
+                      await api.delete(`/guildas/${id}/membros/sair`, {
+                        headers: { "X-Usuario-Id": user?.id },
+                      });
+                      router.back();
+                    }
+                  },
                 ])
               }
             >

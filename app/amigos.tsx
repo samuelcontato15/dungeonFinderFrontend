@@ -90,44 +90,79 @@ export default function Amigos() {
   }
 
   async function handleAdicionar(destinatarioId: string) {
-    if (!user?.id) {
-      Alert.alert("Erro", "Usuário não identificado.");
-      return;
+  if (!user?.id) {
+    Alert.alert("Erro", "Usuário não identificado.");
+    return;
+  }
+
+  try {
+    setAdicionando(destinatarioId);
+
+    if (guildaId) {
+
+      console.log("ENVIANDO CONVITE GUILDA");
+      console.log("guildaId:", guildaId);
+      console.log("destinatarioId:", destinatarioId);
+
+      const response = await api.post(
+        `/guildas/${guildaId}/membros/${destinatarioId}/convidar`,
+        {},
+        {
+          headers: {
+            "X-Usuario-Id": user.id,
+          },
+        }
+      );
+
+      console.log("SUCESSO:", response.data);
+
+      Alert.alert(
+        "Convite enviado!",
+        "Pedido para entrar na guilda enviado."
+      );
+
+    } else {
+
+      console.log("ENVIANDO AMIZADE");
+
+      const response = await api.post(
+        `/amizades?destinatarioId=${destinatarioId}`,
+        {},
+        {
+          headers: {
+            "X-Usuario-Id": user.id,
+          },
+        }
+      );
+
+      console.log("SUCESSO:", response.data);
+
+      Alert.alert(
+        "Solicitação enviada!",
+        "Pedido de amizade enviado com sucesso."
+      );
     }
 
-    try {
-      setAdicionando(destinatarioId);
+    setAdicionados((prev) => [...prev, destinatarioId]);
 
-      if (guildaId) {
-       
-       await api.post(
-  `/guildas/${guildaId}/membros/${destinatarioId}/convidar`,
-  {},
-  {
-    headers: {
-      "X-Usuario-Id": user.id,
-    },
-  }
-);
-        Alert.alert("Convite enviado!", "Pedido para entrar na guilda enviado.");
-      } else {
-   
-        await api.post(
-          `/amizades?destinatarioId=${destinatarioId}`,
-          {},
-          { headers: { "X-Usuario-Id": user.id } }
-        );
-        Alert.alert("Solicitação enviada!", "Pedido de amizade enviado com sucesso.");
-      }
+  } catch (error: any) {
 
-      setAdicionados((prev) => [...prev, destinatarioId]);
-    } catch (error: any) {
+    console.log("ERRO COMPLETO:");
+    console.log(error);
 
-    console.log("ERRO:", error.response?.data);
+    console.log("STATUS:");
+    console.log(error?.response?.status);
+
+    console.log("DATA:");
+    console.log(error?.response?.data);
+
+    console.log("MESSAGE:");
+    console.log(error?.message);
 
     Alert.alert(
       "Erro",
-      error.response?.data?.message ||
+      JSON.stringify(error?.response?.data) ||
+      error?.message ||
       "Não foi possível enviar a solicitação."
     );
 
@@ -135,7 +170,6 @@ export default function Amigos() {
     setAdicionando(null);
   }
 }
-
   return (
     <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo} resizeMode="cover">
       <View style={estilos.overlay} />
