@@ -14,9 +14,9 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
 
 const ITENS = [
-  { id: "1", icone: "help-circle-outline",  rotulo: "Ajuda"        },
-  { id: "2", icone: "options-outline",       rotulo: "Preferências" },
-  { id: "3", icone: "log-out-outline",       rotulo: "Log-out",  logout: true },
+  { id: "1", icone: "help-circle-outline", rotulo: "Ajuda" },
+  { id: "2", icone: "options-outline", rotulo: "Preferências" },
+  { id: "3", icone: "log-out-outline", rotulo: "Log-out", logout: true },
 ] as const;
 
 export default function Config() {
@@ -42,7 +42,8 @@ export default function Config() {
     if (item.logout) {
       handleLogout();
       return;
-    }  }
+    }
+  }
 
   return (
     <ImageBackground

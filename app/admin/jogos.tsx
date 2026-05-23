@@ -16,14 +16,12 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 
-// Mapeamento dos valores do enum para os checkboxes
 const categoriasBase = [
   { nome: "Novidade", valor: "NOVIDADE" },
   { nome: "MMO", valor: "MMO" },
   { nome: "RPG de Mesa", valor: "RPG" },
 ];
 
-// Combinações possíveis
 const combinacoes: Record<string, string> = {
   "": "MMO",
   "MMO": "MMO",
@@ -35,7 +33,6 @@ const combinacoes: Record<string, string> = {
   "MMO,NOVIDADE,RPG": "NOVIDADE_MMO_RPG",
 };
 
-// Converte o valor do enum para array de checkboxes ativos
 function enumParaCheckboxes(valor: string): string[] {
   if (!valor) return [];
   if (valor === "NOVIDADE_MMO_RPG") return ["NOVIDADE", "MMO", "RPG"];
@@ -59,7 +56,6 @@ export default function Jogos() {
   const [editandoId, setEditandoId] = useState<string | null>(null);
   const [checkboxes, setCheckboxes] = useState<string[]>([]);
 
-  // Gera slug a partir do nome
   function gerarSlug(texto: string): string {
     return texto
       .normalize("NFD")
@@ -86,7 +82,6 @@ export default function Jogos() {
     setEditandoId(null);
   }
 
-  // Calcula o valor do enum a partir dos checkboxes selecionados
   function obterCategoria(): string {
     const chave = [...checkboxes].sort().join(",");
     return combinacoes[chave] || "MMO";

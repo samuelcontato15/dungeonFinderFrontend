@@ -61,17 +61,12 @@ export default function Inicio() {
   }
 
   function navegarParaJogo(jogo: Jogo) {
-    if (!isAuthenticated) {
-      router.push("/dungeonEntrada");
-      return;
-    }
     router.push({
       pathname: "/telaJogo",
       params: { jogoId: jogo.id },
     } as any);
   }
 
-  // Separação por categoria (permite duplicação)
   const novidades = jogos.filter(j => contemCategoria(j.categoria, "NOVIDADE"));
   const games = jogos.filter(j => contemCategoria(j.categoria, "MMO"));
   const rpgMesa = jogos.filter(j => contemCategoria(j.categoria, "RPG"));
@@ -126,7 +121,6 @@ export default function Inicio() {
         <View style={estilos.centralizar}>
           <ActivityIndicator size="large" color="#D4AF37" />
         </View>
-        <BarraNavegacao />
       </ImageBackground>
     );
   }

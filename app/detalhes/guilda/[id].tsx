@@ -30,6 +30,7 @@ export default function DetalhesGuilda() {
   const [carregando, setCarregando] = useState(true);
   const [membroSelecionado, setMembroSelecionado] = useState<any>(null);
   const [modalExpulsar, setModalExpulsar] = useState(false);
+  const [pedidoEnviado, setPedidoEnviado] = useState(false);
 
   useEffect(() => {
     if (id) carregarGuilda();
@@ -54,19 +55,16 @@ export default function DetalhesGuilda() {
 
   const isLider = guilda?.criadoPor?.id === user?.id;
   const isMembro = membros.some((m) => m.usuario?.id === user?.id);
-  const [pedidoEnviado, setPedidoEnviado] = useState(false);
 
-async function handleJuntarSe() {
-  try {
-    
-    await api.post(`/guildas/${id}/membros/entrar`, {}, { headers: { "X-Usuario-Id": user?.id } });
-    Alert.alert("Sucesso", "Você entrou na guilda!");
-    carregarGuilda();
-  } catch (e: any) {
-    Alert.alert("Aviso", e?.response?.data?.message || "Erro ao entrar na guilda.");
+  async function handleJuntarSe() {
+    try {
+      await api.post(`/guildas/${id}/membros/entrar`, {}, { headers: { "X-Usuario-Id": user?.id } });
+      Alert.alert("Sucesso", "Você entrou na guilda!");
+      carregarGuilda();
+    } catch (e: any) {
+      Alert.alert("Aviso", e?.response?.data?.message || "Erro ao entrar na guilda.");
+    }
   }
-}
-
 
   async function handleExpulsar() {
     try {
@@ -100,9 +98,12 @@ async function handleJuntarSe() {
           style={[estilos.banner, { paddingTop: insets.top + 10 }]}
         >
           <View style={estilos.bannerOverlay} />
+
+          {/* Botão Voltar (esquerda) */}
           <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="#FFF" />
           </TouchableOpacity>
+
           <View style={estilos.bannerInfo}>
             <Text style={estilos.tituloGuilda}>{guilda.nome}</Text>
             <Text style={estilos.textoCriador}>feito por: {guilda.criadoPor?.nick}</Text>
@@ -216,6 +217,14 @@ async function handleJuntarSe() {
               <Text style={estilos.btnSairTxt}>Sair da guilda</Text>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity
+            style={estilos.btnChat}
+            onPress={() => router.push({ pathname: "/guildachat", params: { id } } as any)}
+          >
+            <Ionicons name="chatbubbles-outline" size={24} color="#D4AF37" />
+          </TouchableOpacity>
+
         </View>
       </ScrollView>
 
@@ -266,7 +275,6 @@ const estilos = StyleSheet.create({
   imgAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37" },
   nomeAvatarChat: { color: "#FFF", fontSize: 10, marginTop: 4 },
   balaoMensagem: { flex: 1, backgroundColor: "#EAE0D5", borderRadius: 15, borderTopLeftRadius: 0, padding: 15 },
-  textoBalaoHeader: { color: "#5c4033", fontWeight: "bold", fontSize: 14, marginBottom: 10 },
   textoBalaoCorpo: { color: "#5c4033", fontSize: 14, lineHeight: 22 },
   tituloSessao: { color: "#FFF", fontSize: 20, marginBottom: 15 },
   listaAmigos: { flexDirection: "row", marginBottom: 30 },
@@ -279,6 +287,8 @@ const estilos = StyleSheet.create({
   btnJuntarTxt: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
   btnSair: { backgroundColor: "#B00020", paddingVertical: 12, paddingHorizontal: 40, borderRadius: 25, alignSelf: "center", marginTop: 10 },
   btnSairTxt: { color: "#FFF", fontWeight: "bold", fontSize: 14 },
+  btnChat: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", marginTop: 20, gap: 8 },
+  btnChatTxt: { color: "#D4AF37", fontWeight: "bold", fontSize: 14 },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center" },
   modalBox: { backgroundColor: "#1a1008", padding: 20, borderRadius: 12, width: "80%", borderWidth: 1, borderColor: "#D4AF37" },
   modalTitulo: { color: "#E8D5A3", fontSize: 18, fontWeight: "bold", marginBottom: 10 },

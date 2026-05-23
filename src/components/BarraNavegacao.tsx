@@ -17,24 +17,27 @@ const ITENS_NAVEGACAO = [
   { icone: "person-outline", rotulo: "Perfil", rota: "/perfil" },
 ] as const;
 
+const ROTAS_PUBLICAS = ["/", "/dungeonEntrada"];
+
 export default function BarraNavegacao() {
   const margens = useSafeAreaInsets();
   const roteador = useRouter();
   const caminhoAtual = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   function handleNavegar(rota: string) {
-    if (!isAuthenticated) {
+    if (isLoading) return; // 
+
+    if (!isAuthenticated && !ROTAS_PUBLICAS.includes(rota)) {
       roteador.push("/dungeonEntrada" as any);
       return;
     }
 
-    if (caminhoAtual === rota) {
-      return;
-    }
+    if (caminhoAtual === rota) return;
 
     roteador.push(rota as any);
   }
+
   return (
     <View style={[estilos.barra, { paddingBottom: margens.bottom + 6 }]}>
       {ITENS_NAVEGACAO.map((item) => {

@@ -34,7 +34,7 @@ export default function DungeonEntrada() {
           <Text style={estilos.titulo}>DUNGEON FINDER</Text>
           <Text style={estilos.subtitulo}>Sua aventura começa aqui</Text>
 
-         
+
 
           <View style={estilos.botoes}>
             <TouchableOpacity
@@ -45,7 +45,7 @@ export default function DungeonEntrada() {
               <Text style={estilos.botaoPrimarioTexto}>Entrar na Dungeon</Text>
             </TouchableOpacity>
 
-          
+
 
             <View style={estilos.cadastroLinha}>
               <Text style={estilos.cadastroTexto}>Não tem conta? </Text>
@@ -116,11 +116,11 @@ const estilos = StyleSheet.create({
     opacity: 0.9,
   },
   botoes: {
-  width: "100%",
-  gap: 12,
-  alignItems: "center",
-  marginTop: 20,   
-},
+    width: "100%",
+    gap: 12,
+    alignItems: "center",
+    marginTop: 20,
+  },
   botaoPrimario: {
     width: "100%",
     backgroundColor: "#D4AF37",

@@ -47,9 +47,6 @@ export default function Notificacoes() {
       const enriquecidas = await Promise.all(
         lista.map(async (n: any) => {
           try {
-            // =====================================
-            // SOLICITAÇÃO DE AMIZADE
-            // =====================================
             if (n.tipo === "SOLICITACAO_AMIZADE" && n.referenciaId) {
               const amzRes = await api.get(`/amizades/${n.referenciaId}`, {
                 headers: {
@@ -62,10 +59,6 @@ export default function Notificacoes() {
                 solicitante: amzRes.data.solicitante,
               };
             }
-
-            // =====================================
-            // PEDIDO PARA ENTRAR NA GUILDA
-            // =====================================
             if (
               n.tipo === "PEDIDO_ENTRAR_GUILDA" &&
               n.referenciaTipo &&
@@ -79,9 +72,6 @@ export default function Notificacoes() {
               };
             }
 
-            // =====================================
-            // CONVITE DE GUILDA
-            // =====================================
             if (n.tipo === "CONVITE_GUILDA" && n.referenciaId) {
               const guildaRes = await api.get(`/guildas/${n.referenciaId}`);
 
@@ -93,15 +83,11 @@ export default function Notificacoes() {
 
             return n;
           } catch (error) {
-            // Removida a variável 'n' do log para evitar imprimir base64 em caso de erro
             console.log("ERRO AO PROCESSAR NOTIFICAÇÃO:", error);
             return n;
           }
         })
       );
-
-      // LOG REMOVIDO DAQUI
-
       setNotificacoes(enriquecidas);
     } catch (error) {
       console.log("ERRO GERAL:", error);

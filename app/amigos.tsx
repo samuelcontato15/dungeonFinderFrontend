@@ -36,7 +36,7 @@ export default function Amigos() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
-  
+
   const { guildaId } = useLocalSearchParams<{ guildaId?: string }>();
 
   const [busca, setBusca] = useState("");

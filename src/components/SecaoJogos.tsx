@@ -40,7 +40,10 @@ export default function SecaoJogos({
         contentContainerStyle={estilos.fileira}
       >
         {dados.map((item) => (
-          <Link key={item.id} href={`/detalhes/${item.id}`} asChild>
+          <Link
+            key={item.id}
+            href={`/detalhes/jogos/${item.id}` as any}
+          >
             <TouchableOpacity activeOpacity={0.8}>
               <Image
                 source={item.fonte}
@@ -54,6 +57,7 @@ export default function SecaoJogos({
             </TouchableOpacity>
           </Link>
         ))}
+
       </ScrollView>
 
       <View style={estilos.divisor} />

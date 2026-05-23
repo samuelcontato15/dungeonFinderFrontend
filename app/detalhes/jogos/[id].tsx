@@ -41,22 +41,18 @@ export default function Comunidade() {
   const carregarDados = async () => {
     setCarregando(true);
     try {
-      // Busca paralela: Usuários, Amizades e as Guildas DO USUÁRIO
       const [usuariosRes, amizadesRes, guildasRes] = await Promise.all([
         api.get("/usuarios"),
         user?.id ? api.get(`/amizades/usuario/${user.id}`) : Promise.resolve({ data: [] }),
         user?.id ? api.get(`/guildas/usuario/${user.id}`) : Promise.resolve({ data: [] }) // <--- ALTERADO AQUI
       ]);
-
-      // Processa amigos
       const amizades = amizadesRes.data || [];
       const amigosIds = amizades
         .filter((amz: any) => amz.status === "ACEITO")
         .map((amz: any) => (amz.solicitante.id === user?.id ? amz.destinatario.id : amz.solicitante.id));
 
       setUsuarios(usuariosRes.data.filter((u: UsuarioAPI) => u.id !== user?.id && amigosIds.includes(u.id)));
-      
-      // Carrega apenas as guildas que o usuário faz parte
+
       setGuildas(guildasRes.data || []);
 
     } catch (err) {
@@ -66,11 +62,9 @@ export default function Comunidade() {
     }
   };
 
-  // Filtros
   const usuariosFiltrados = usuarios.filter((u) => u.nick.toLowerCase().includes(busca.toLowerCase()));
   const guildasFiltradas = guildas.filter((g) => g.nome.toLowerCase().includes(busca.toLowerCase()));
 
-  // Renderizadores
   const renderUsuario = ({ item }: { item: UsuarioAPI }) => (
     <TouchableOpacity style={[estilos.card, estilos.cardAmigo]} onPress={() => router.push(`/detalhes/usuario/${item.id}` as any)}>
       <View style={estilos.avatarCirculo}>
@@ -123,7 +117,7 @@ export default function Comunidade() {
         {carregando ? (
           <ActivityIndicator size="large" color="#D4AF37" style={{ marginTop: 40 }} />
         ) : (
-          <FlatList<any> 
+          <FlatList<any>
             data={aba === "usuarios" ? usuariosFiltrados : guildasFiltradas}
             keyExtractor={(item) => item.id}
             renderItem={aba === "usuarios" ? renderUsuario : renderGuilda}

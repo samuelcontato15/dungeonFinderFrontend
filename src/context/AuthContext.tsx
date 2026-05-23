@@ -46,7 +46,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin: data.isAdmin,
       };
     } catch (error: any) {
-      // Token expirado ou inválido — limpa sessão e força novo login
       if (error?.response?.status === 401 || error?.response?.status === 403) {
         await AsyncStorage.multiRemove(["@DungeonFinder:token", "@DungeonFinder:user"]);
       }

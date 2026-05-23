@@ -54,17 +54,15 @@ export default function CriarGuilda() {
       return;
     }
 
-    // Abre a galeria
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [16, 9], // Formato de banner
-      quality: 0.5, // Reduz um pouco a qualidade para não pesar o Base64 no banco
-      base64: true, // Essencial para salvar no banco como TEXT
+      aspect: [16, 9], 
+      quality: 0.5, 
+      base64: true, 
     });
 
     if (!result.canceled && result.assets[0].base64) {
-      // Cria a string base64 completa para ser lida como imagem
       setBannerBase64(`data:image/jpeg;base64,${result.assets[0].base64}`);
     }
   };
@@ -80,11 +78,10 @@ export default function CriarGuilda() {
       const novaGuilda = {
         nome,
         descricao,
-        banner: bannerBase64, // Envia a string gigante da imagem
-        maxMembros: 100, // Valor padrão
+        banner: bannerBase64, 
+        maxMembros: 100, 
       };
 
-      // Chama o endpoint de criar guilda mandando os IDs dos jogos pela URL (RequestParam)
       const jogosParam = jogosSelecionados.join(",");
       const res = await api.post(`/guildas?jogoId=${jogosParam}`, novaGuilda, {
         headers: { "X-Usuario-Id": user?.id },

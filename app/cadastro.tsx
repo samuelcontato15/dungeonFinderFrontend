@@ -18,7 +18,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
 type CamposErro = {
   usuario?: string;
   email?: string;
@@ -26,7 +25,6 @@ type CamposErro = {
   confirmarSenha?: string;
 };
 
-// ─── Helpers de validação ─────────────────────────────────────────────────────
 const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function validarEmail(email: string): string | undefined {
@@ -64,13 +62,11 @@ function validarCampos(
   return erros;
 }
 
-// ─── Detecta se o erro retornado pela API é de e-mail duplicado ───────────────
 function isEmailDuplicado(e: any): boolean {
   const status = e?.response?.status;
-  const data   = e?.response?.data;
-  const msg    = (e?.message ?? "").toLowerCase();
+  const data = e?.response?.data;
+  const msg = (e?.message ?? "").toLowerCase();
 
-  // Ajuste as condições conforme o contrato da sua API
   if (status === 409) return true;
   if (status === 422 || status === 400) {
     const body = JSON.stringify(data ?? "").toLowerCase();
@@ -81,7 +77,6 @@ function isEmailDuplicado(e: any): boolean {
   return false;
 }
 
-// ─── Componente auxiliar de mensagem de erro ──────────────────────────────────
 function ErroTexto({ msg }: { msg?: string }) {
   if (!msg) return null;
   return (
@@ -92,21 +87,20 @@ function ErroTexto({ msg }: { msg?: string }) {
   );
 }
 
-// ─── Tela principal ───────────────────────────────────────────────────────────
+
 export default function Cadastro() {
-  const router   = useRouter();
-  const margens  = useSafeAreaInsets();
+  const router = useRouter();
+  const margens = useSafeAreaInsets();
   const { signUp } = useAuth();
 
-  const [usuario, setUsuario]               = useState("");
-  const [email, setEmail]                   = useState("");
-  const [senha, setSenha]                   = useState("");
+  const [usuario, setUsuario] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [mostrarSenha, setMostrarSenha]     = useState(false);
-  const [carregando, setCarregando]         = useState(false);
-  const [erros, setErros]                   = useState<CamposErro>({});
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [erros, setErros] = useState<CamposErro>({});
 
-  // Valida um campo individual ao sair do foco (onBlur)
   function validarCampo(campo: keyof CamposErro, valor: string) {
     const novosErros = { ...erros };
 
@@ -159,7 +153,6 @@ export default function Cadastro() {
       ]);
     } catch (e: any) {
       if (isEmailDuplicado(e)) {
-        // Mostra o erro direto no campo, sem Alert
         setErros((prev) => ({
           ...prev,
           email: "Este e-mail já está em uso.",
@@ -303,7 +296,6 @@ export default function Cadastro() {
   );
 }
 
-// ─── Estilos ──────────────────────────────────────────────────────────────────
 const estilos = StyleSheet.create({
   fundo: { flex: 1 },
   overlay: {

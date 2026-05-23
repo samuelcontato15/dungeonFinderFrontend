@@ -61,7 +61,6 @@ export default function Pesquisar() {
   const [dados, setDados] = useState<Dados | null>(null);
   const [carregando, setCarregando] = useState(true);
 
-  // Busca todos os dados ao montar a tela
   useEffect(() => {
     const t = setTimeout(() => refEntrada.current?.focus(), 100);
 
@@ -88,7 +87,6 @@ export default function Pesquisar() {
     return () => clearTimeout(t);
   }, []);
 
-  // Filtragem local, sem debounce necessário pois é síncrona
   const filtrar = useCallback((termo: string): Dados | null => {
     if (!dados) return null;
     const t = termo.toLowerCase();
