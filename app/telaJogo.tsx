@@ -69,7 +69,7 @@ function Secao({ titulo, children, acaoDireita }: {
   children: React.ReactNode;
   acaoDireita?: React.ReactNode;
 }) {
-  const [expandido, setExpandido] = useState(false);
+  const [expandido, setExpandido] = useState(true);
   return (
     <View style={estilos.secaoWrapper}>
       <TouchableOpacity style={estilos.secaoHeader} onPress={() => setExpandido(v => !v)} activeOpacity={0.7}>
