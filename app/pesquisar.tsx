@@ -118,7 +118,6 @@ export default function Pesquisar() {
       <View style={estilos.overlay} />
       <StatusBar barStyle="light-content" />
 
-      {/* CABEÇALHO */}
       <View style={[estilos.cabecalho, { paddingTop: margens.top + 12 }]}>
         <TouchableOpacity onPress={() => roteador.back()} style={estilos.botaoVoltar}>
           <Ionicons name="arrow-back-outline" size={24} color="#fff" />
@@ -144,7 +143,6 @@ export default function Pesquisar() {
         </View>
       </View>
 
-      {/* RESULTADOS */}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={estilos.scroll}
@@ -187,7 +185,7 @@ export default function Pesquisar() {
             />
 
             <SecaoResultados
-              titulo="GUILDAS"  // ← veio para cá
+              titulo="GUILDAS" 
               icone="shield-outline"
               itens={resultados.guildas}
               renderItem={(guilda: Guilda) => (
@@ -214,7 +212,7 @@ export default function Pesquisar() {
             />
 
             <SecaoResultados
-              titulo="JOGADORES"  // ← foi para cá
+              titulo="JOGADORES"
               icone="person-outline"
               itens={resultados.usuarios}
               renderItem={(usuario: Usuario) => (

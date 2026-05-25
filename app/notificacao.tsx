@@ -40,8 +40,6 @@ export default function Notificacoes() {
         },
       });
 
-      // LOG REMOVIDO DAQUI
-
       const lista = Array.isArray(res.data) ? res.data : [];
 
       const enriquecidas = await Promise.all(

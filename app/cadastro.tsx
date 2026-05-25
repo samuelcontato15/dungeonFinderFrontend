@@ -1,22 +1,22 @@
+import { useAuth } from "@/context/AuthContext";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
+  ActivityIndicator,
+  Alert,
   ImageBackground,
-  StatusBar,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
-  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
 
 type CamposErro = {
   usuario?: string;
@@ -121,7 +121,7 @@ export default function Cadastro() {
         if (!valor) novosErros.senha = "Informe a senha.";
         else if (valor.length < 6) novosErros.senha = "Mínimo de 6 caracteres.";
         else delete novosErros.senha;
-        // Revalida confirmação se já foi tocada
+        
         if (confirmarSenha && valor !== confirmarSenha)
           novosErros.confirmarSenha = "As senhas não coincidem.";
         else if (confirmarSenha && valor === confirmarSenha)
@@ -192,7 +192,7 @@ export default function Cadastro() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Voltar */}
+          
           <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={22} color="#D4AF37" />
             <Text style={estilos.btnVoltarTexto}>Voltar</Text>
@@ -200,7 +200,7 @@ export default function Cadastro() {
 
           <Text style={estilos.titulo}>Cadastro</Text>
 
-          {/* Usuário */}
+          
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Usuário</Text>
             <TextInput
@@ -216,7 +216,7 @@ export default function Cadastro() {
             <ErroTexto msg={erros.usuario} />
           </View>
 
-          {/* Email */}
+          
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Email</Text>
             <TextInput
@@ -233,7 +233,7 @@ export default function Cadastro() {
             <ErroTexto msg={erros.email} />
           </View>
 
-          {/* Senha */}
+          
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Senha</Text>
             <View>
@@ -253,7 +253,7 @@ export default function Cadastro() {
             <ErroTexto msg={erros.senha} />
           </View>
 
-          {/* Confirmar senha */}
+          
           <View style={estilos.campoWrapper}>
             <Text style={estilos.label}>Confirmar senha</Text>
             <TextInput
@@ -268,7 +268,7 @@ export default function Cadastro() {
             <ErroTexto msg={erros.confirmarSenha} />
           </View>
 
-          {/* Botão */}
+         
           <TouchableOpacity
             style={[
               estilos.botao,

@@ -31,8 +31,6 @@ export default function Admin() {
 
       <Text style={styles.subtitle}>Bem-vindo, {user.usuario}</Text>
 
-      {/* USUÁRIOS */}
-
       <TouchableOpacity
         style={styles.card}
         onPress={() => toggleAba("usuarios")}
@@ -59,8 +57,6 @@ export default function Admin() {
         </View>
       </TouchableOpacity>
 
-      {/* JOGOS */}
-
       <TouchableOpacity style={styles.card} onPress={() => toggleAba("jogos")}>
         <Ionicons name="game-controller" size={28} color="#D4AF37" />
 
@@ -81,8 +77,6 @@ export default function Admin() {
           )}
         </View>
       </TouchableOpacity>
-
-      {/* GUILDAS */}
 
       <TouchableOpacity
         style={styles.card}
@@ -108,7 +102,6 @@ export default function Admin() {
         </View>
       </TouchableOpacity>
 
-      {/* EVENTOS */}
 
       <TouchableOpacity
         style={styles.card}
@@ -134,7 +127,6 @@ export default function Admin() {
         </View>
       </TouchableOpacity>
 
-      {/* RAIDS */}
 
       <TouchableOpacity style={styles.card} onPress={() => toggleAba("raids")}>
         <Ionicons name="skull" size={28} color="#D4AF37" />
@@ -157,7 +149,6 @@ export default function Admin() {
         </View>
       </TouchableOpacity>
 
-      {/* RELATÓRIOS */}
 
       <TouchableOpacity
         style={styles.card}

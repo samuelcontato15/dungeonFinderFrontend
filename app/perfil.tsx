@@ -104,7 +104,7 @@ export default function Perfil() {
     setCarregandoFavoritos(true);
     try {
       const response = await api.get(`/jogos_favoritos/usuario/${user.id}`);
-      // O backend retorna List<JogoFavorito> onde cada item tem { id, jogo: { id, nome, capa, ... } }
+      
       const listaJogos = response.data.map((fav: any) => fav.jogo);
       setFavoritos(listaJogos);
     } catch (error: any) {
@@ -244,7 +244,7 @@ export default function Perfil() {
           </TouchableOpacity>
         </View>
 
-        {/* PERFIL */}
+       
         <View style={estilos.perfil}>
           <View style={{ alignItems: "center" }}>
             <TouchableOpacity onPress={escolherImagem}>
@@ -310,7 +310,7 @@ export default function Perfil() {
           </View>
         </View>
 
-        {/* BOTÃO SALVAR */}
+        
         {temAlteracoes && (
           <TouchableOpacity
             style={estilos.botaoSalvar}
@@ -328,7 +328,7 @@ export default function Perfil() {
           </TouchableOpacity>
         )}
 
-        {/* AMIGOS */}
+        
         <View style={estilos.tituloRow}>
           <Text style={estilos.titulo}>AMIGOS</Text>
           <TouchableOpacity onPress={() => router.push("/amigos")}>
@@ -363,7 +363,7 @@ export default function Perfil() {
           </ScrollView>
         )}
 
-        {/* JOGOS FAVORITOS */}
+        
         <View style={estilos.tituloRow}>
           <Text style={estilos.titulo}>JOGOS FAVORITOS</Text>
           <TouchableOpacity
@@ -381,7 +381,7 @@ export default function Perfil() {
           <Text style={estilos.msgVazia}>Nenhum jogo favorito adicionado</Text>
         ) : null}
 
-        {/* EXIBIÇÃO DOS FAVORITOS */}
+        
         <View style={estilos.favoritos}>
           {favoritos.map((jogo) => (
             <View key={jogo.id} style={estilos.jogoFavItem}>
@@ -397,7 +397,7 @@ export default function Perfil() {
           ))}
         </View>
 
-        {/* LISTA PARA EDITAR FAVORITOS */}
+       
         {editandoFavoritos && (
           <View style={estilos.listaJogos}>
             {jogos.map((jogo) => {
