@@ -44,7 +44,7 @@ export default function Comunidade() {
       const [usuariosRes, amizadesRes, guildasRes] = await Promise.all([
         api.get("/usuarios"),
         user?.id ? api.get(`/amizades/usuario/${user.id}`) : Promise.resolve({ data: [] }),
-        user?.id ? api.get(`/guildas/usuario/${user.id}`) : Promise.resolve({ data: [] }) // <--- ALTERADO AQUI
+        user?.id ? api.get(`/guildas/usuario/${user.id}`) : Promise.resolve({ data: [] }) 
       ]);
       const amizades = amizadesRes.data || [];
       const amigosIds = amizades
