@@ -1,15 +1,15 @@
+import { Botao, Cabecalho, Campo, Carregando, Cartao, Tela } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { cores, fontes, raios, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -101,146 +101,106 @@ export default function EditarRaid() {
 
   if (carregando) {
     return (
-      <View style={estilos.loading}>
-        <ActivityIndicator size="large" color="#D4AF37" />
-      </View>
+      <Tela>
+        <Carregando />
+      </Tela>
     );
   }
 
   return (
-    <ScrollView
-      style={estilos.container}
-      contentContainerStyle={{
-        paddingTop: insets.top + 20,
-        paddingBottom: 40,
-      }}
-    >
-      <TouchableOpacity onPress={() => router.back()}>
-        <Ionicons name="arrow-back" size={24} color="#FFF" />
-      </TouchableOpacity>
+    <Tela>
+      <Cabecalho titulo="Editar Raid" subtitulo="Ajuste os planos da missão" />
 
-      <Text style={estilos.titulo}>Editar Raid</Text>
-
-      <Text style={estilos.label}>Nome</Text>
-      <TextInput
-        value={nome}
-        onChangeText={setNome}
-        style={estilos.input}
-        placeholderTextColor="#777"
-      />
-
-      <Text style={estilos.label}>Descrição</Text>
-      <TextInput
-        value={descricao}
-        onChangeText={setDescricao}
-        style={[estilos.input, { height: 100 }]}
-        multiline
-        placeholderTextColor="#777"
-      />
-
-      <Text style={estilos.label}>Mínimo jogadores</Text>
-      <TextInput
-        value={minJogadores}
-        onChangeText={setMinJogadores}
-        keyboardType="numeric"
-        style={estilos.input}
-      />
-
-      <Text style={estilos.label}>Máximo jogadores</Text>
-      <TextInput
-        value={maxJogadores}
-        onChangeText={setMaxJogadores}
-        keyboardType="numeric"
-        style={estilos.input}
-      />
-
-      <Text style={estilos.label}>Data da raid</Text>
-
-      <TouchableOpacity
-        style={estilos.input}
-        onPress={() => setMostrarData(true)}
+      <ScrollView
+        contentContainerStyle={[estilos.scroll, { paddingBottom: insets.bottom + 40 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={{ color: "#FFF" }}>
-          {inicioEm.toLocaleString("pt-BR")}
-        </Text>
-      </TouchableOpacity>
+        <Cartao style={estilos.cartao}>
+          <Campo
+            label="Nome"
+            icone="skull-outline"
+            value={nome}
+            onChangeText={setNome}
+          />
 
-      {/* PICKER SEM BUG */}
-      <DateTimePickerModal
-        isVisible={mostrarData}
-        mode="datetime"
-        onConfirm={confirmarData}
-        onCancel={() => setMostrarData(false)}
-      />
+          <Campo
+            label="Descrição"
+            value={descricao}
+            onChangeText={setDescricao}
+            multiline
+          />
 
-      <TouchableOpacity
-        style={estilos.botaoSalvar}
-        onPress={salvarEdicao}
-        disabled={salvando}
-      >
-        {salvando ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          <>
-            <Ionicons name="save-outline" size={18} color="#FFF" />
-            <Text style={estilos.textoSalvar}>Salvar Alterações</Text>
-          </>
-        )}
-      </TouchableOpacity>
-    </ScrollView>
+          <View style={estilos.linha}>
+            <View style={{ flex: 1 }}>
+              <Campo
+                label="Mínimo jogadores"
+                icone="person-outline"
+                value={minJogadores}
+                onChangeText={setMinJogadores}
+                keyboardType="numeric"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Campo
+                label="Máximo jogadores"
+                icone="people-outline"
+                value={maxJogadores}
+                onChangeText={setMaxJogadores}
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          <View style={{ gap: 6 }}>
+            <Text style={tipo.rotulo}>Data da raid</Text>
+            <TouchableOpacity
+              style={estilos.seletor}
+              onPress={() => setMostrarData(true)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={18} color={cores.ouro} />
+              <Text style={estilos.seletorTexto}>
+                {inicioEm.toLocaleString("pt-BR")}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={cores.textoApagado} />
+            </TouchableOpacity>
+          </View>
+        </Cartao>
+
+        {/* PICKER SEM BUG */}
+        <DateTimePickerModal
+          isVisible={mostrarData}
+          mode="datetime"
+          onConfirm={confirmarData}
+          onCancel={() => setMostrarData(false)}
+        />
+
+        <Botao
+          titulo="Salvar Alterações"
+          icone="save-outline"
+          onPress={salvarEdicao}
+          carregando={salvando}
+        />
+      </ScrollView>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0f0f0f",
-    paddingHorizontal: 20,
-  },
-
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#0f0f0f",
-  },
-
-  titulo: {
-    color: "#FFF",
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-
-  label: {
-    color: "#D4AF37",
-    marginTop: 12,
-    marginBottom: 6,
-    fontWeight: "bold",
-  },
-
-  input: {
-    backgroundColor: "#1c1c1c",
-    padding: 14,
-    borderRadius: 10,
-    color: "#FFF",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
-
-  botaoSalvar: {
-    marginTop: 30,
-    backgroundColor: "#D4AF37",
-    padding: 16,
-    borderRadius: 12,
+  scroll: { paddingHorizontal: 20, paddingTop: 6, gap: 18 },
+  cartao: { gap: 16, padding: 18 },
+  linha: { flexDirection: "row", gap: 12 },
+  seletor: {
     flexDirection: "row",
-    justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    backgroundColor: cores.campo,
+    borderRadius: raios.m,
+    borderWidth: 1,
+    borderColor: cores.borda,
   },
-
-  textoSalvar: {
-    color: "#FFF",
-    fontWeight: "bold",
-  },
+  seletorTexto: { flex: 1, fontFamily: fontes.corpo, fontSize: 17, color: cores.texto },
 });

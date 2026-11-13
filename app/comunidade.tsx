@@ -1,21 +1,13 @@
 import BarraNavegacao from "@/components/BarraNavegacao";
+import { Abas, Avatar, Campo, Carregando, EstadoVazio, Selo, Tela, estiloCartao } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { brilhoOuro, cores, fontes, gradientes, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  ImageBackground,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type UsuarioAPI = { id: string; nick: string; fotoPerfil: string | null; bio: string | null; };
@@ -66,124 +58,101 @@ export default function Comunidade() {
   const guildasFiltradas = guildas.filter((g) => g.nome.toLowerCase().includes(busca.toLowerCase()));
 
   const renderUsuario = ({ item }: { item: UsuarioAPI }) => (
-    <TouchableOpacity style={[estilos.card, estilos.cardAmigo]} onPress={() => router.push(`/detalhes/usuario/${item.id}` as any)}>
-      <View style={estilos.avatarCirculo}>
-        {item.fotoPerfil ? <Image source={{ uri: item.fotoPerfil }} style={estilos.avatarImg} /> : <Ionicons name="person" size={26} color="#E8D5A3" />}
-      </View>
+    <TouchableOpacity style={[estiloCartao.base, estiloCartao.linha]} activeOpacity={0.8} onPress={() => router.push(`/detalhes/usuario/${item.id}` as any)}>
+      <Avatar uri={item.fotoPerfil} tamanho={52} destaque />
       <View style={estilos.cardInfo}>
-        <Text style={estilos.cardNome}>{item.nick}</Text>
-        <Text style={estilos.cardSub}>{item.bio || "Sem bio"}</Text>
+        <Text style={estilos.cardNome} numberOfLines={1}>{item.nick}</Text>
+        <Text style={tipo.suave} numberOfLines={2}>{item.bio || "Sem bio"}</Text>
       </View>
+      <Selo texto="Amigo" icone="heart" />
     </TouchableOpacity>
   );
 
   const renderGuilda = ({ item }: { item: GuildaAPI }) => (
-    <TouchableOpacity style={estilos.card} activeOpacity={0.8} onPress={() => router.push(`/detalhes/guilda/${item.id}` as any)}>
-      <View style={estilos.avatarCirculo}>
-        {item.banner ? <Image source={{ uri: item.banner }} style={estilos.avatarImg} /> : <Ionicons name="shield" size={26} color="#E8D5A3" />}
-      </View>
+    <TouchableOpacity style={[estiloCartao.base, estiloCartao.linha]} activeOpacity={0.8} onPress={() => router.push(`/detalhes/guilda/${item.id}` as any)}>
+      <Avatar uri={item.banner} tamanho={52} icone="shield" quadrado />
       <View style={estilos.cardInfo}>
-        <Text style={estilos.cardNome}>{item.nome}</Text>
-        <Text style={estilos.cardSub}>{item.descricao || "Sem descrição"}</Text>
+        <Text style={estilos.cardNome} numberOfLines={1}>{item.nome}</Text>
+        <Text style={tipo.suave} numberOfLines={2}>{item.descricao || "Sem descrição"}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#D4AF37" />
+      <Ionicons name="chevron-forward" size={20} color={cores.ouro} />
     </TouchableOpacity>
   );
 
   return (
-    <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo}>
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
+    <Tela>
+      <View style={[estilos.container, { paddingTop: insets.top + 16 }]}>
+        <Text style={estilos.titulo}>Comunidade</Text>
+        <Text style={[tipo.italico, { marginBottom: 16 }]}>Seus aliados e as guildas do reino.</Text>
 
-      <View style={[estilos.container, { paddingTop: insets.top + 10 }]}>
-        <Text style={estilos.titulo}>COMUNIDADE</Text>
+        <Abas
+          valor={aba}
+          aoMudar={(chave) => { setAba(chave); setBusca(""); }}
+          opcoes={[
+            { chave: "usuarios", rotulo: "Amigos", icone: "people" },
+            { chave: "guildas", rotulo: "Guildas", icone: "shield" },
+          ]}
+        />
 
-        <View style={estilos.abas}>
-          <TouchableOpacity style={[estilos.aba, aba === "usuarios" && estilos.abaAtiva]} onPress={() => { setAba("usuarios"); setBusca(""); }}>
-            <Ionicons name="people" size={16} color={aba === "usuarios" ? "#1a1008" : "#E8D5A3"} />
-            <Text style={[estilos.abaTxt, aba === "usuarios" && estilos.abaTxtAtiva]}>Amigos</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[estilos.aba, aba === "guildas" && estilos.abaAtiva]} onPress={() => { setAba("guildas"); setBusca(""); }}>
-            <Ionicons name="shield" size={16} color={aba === "guildas" ? "#1a1008" : "#E8D5A3"} />
-            <Text style={[estilos.abaTxt, aba === "guildas" && estilos.abaTxtAtiva]}>Guildas</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={estilos.inputContainer}>
-          <Ionicons name="search-outline" size={18} color="#888" />
-          <TextInput style={estilos.input} placeholder={aba === "usuarios" ? "Buscar amigo..." : "Buscar guilda..."} placeholderTextColor="#888" value={busca} onChangeText={setBusca} />
+        <View style={{ marginTop: 12 }}>
+          <Campo
+            icone="search-outline"
+            placeholder={aba === "usuarios" ? "Buscar amigo..." : "Buscar guilda..."}
+            value={busca}
+            onChangeText={setBusca}
+          />
         </View>
 
         {carregando ? (
-          <ActivityIndicator size="large" color="#D4AF37" style={{ marginTop: 40 }} />
+          <Carregando />
         ) : (
 
           <FlatList<any>
             data={aba === "usuarios" ? usuariosFiltrados : guildasFiltradas}
             keyExtractor={(item) => item.id}
             renderItem={aba === "usuarios" ? renderUsuario : renderGuilda}
-            contentContainerStyle={{ gap: 10, paddingBottom: 120, paddingTop: 10 }}
+            contentContainerStyle={{ gap: 10, paddingBottom: 130, paddingTop: 14 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <Text style={estilos.vazio}>
-                {busca ? "Nenhum resultado encontrado" : "Nenhum dado cadastrado"}
-              </Text>
+              <EstadoVazio
+                icone={aba === "usuarios" ? "people-outline" : "shield-outline"}
+                texto={busca ? "Nenhum resultado encontrado" : "Nenhum dado cadastrado"}
+              />
             }
           />
         )}
       </View>
 
       {aba === "guildas" && (
-        <TouchableOpacity style={[estilos.fab, { bottom: insets.bottom + 90 }]} onPress={() => router.push("/guildascriar")}>
-          <Ionicons name="add" size={32} color="#1a1008" />
+        <TouchableOpacity style={[estilos.fab, { bottom: insets.bottom + 92 }]} activeOpacity={0.85} onPress={() => router.push("/guildascriar")}>
+          <LinearGradient colors={gradientes.ouro} style={StyleSheet.absoluteFill} />
+          <Ionicons name="add" size={30} color={cores.tinta} />
         </TouchableOpacity>
       )}
 
       <View style={estilos.footer}><BarraNavegacao /></View>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.65)" },
   container: { flex: 1, paddingHorizontal: 20 },
-  titulo: { color: "#E8D5A3", fontSize: 22, fontWeight: "900", letterSpacing: 2, marginBottom: 16 },
-  abas: { flexDirection: "row", gap: 10, marginBottom: 10 },
-  aba: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: "#D4AF37" },
-  abaAtiva: { backgroundColor: "#D4AF37" },
-  abaTxt: { color: "#E8D5A3", fontWeight: "700", fontSize: 14 },
-  abaTxtAtiva: { color: "#1a1008" },
-  inputContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(232,213,163,0.85)", borderRadius: 8, paddingHorizontal: 12, gap: 8, marginBottom: 4 },
-  input: { flex: 1, paddingVertical: 12, fontSize: 14, color: "#1a1008" },
-  card: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "rgba(212,175,55,0.2)", gap: 12 },
-  cardAmigo: { borderColor: "#D4AF37", borderWidth: 2, shadowColor: "#D4AF37", shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 6, elevation: 8 },
-  avatarCirculo: { width: 52, height: 52, borderRadius: 26, backgroundColor: "#444", justifyContent: "center", alignItems: "center", overflow: "hidden", borderWidth: 1, borderColor: "#E8D5A3" },
-  avatarImg: { width: "100%", height: "100%" },
-  cardInfo: { flex: 1, gap: 4 },
-  cardNome: { color: "#E8D5A3", fontSize: 15, fontWeight: "700" },
-  cardSub: { color: "#aaa", fontSize: 12 },
-  amigoIndicator: { backgroundColor: "rgba(212,175,55,0.2)", borderRadius: 12, padding: 4 },
-  vazio: { color: "#999", fontStyle: "italic", textAlign: "center", marginTop: 40 },
-
+  titulo: { ...tipo.display, fontSize: 26, color: cores.pergaminho, letterSpacing: 2 },
+  cardInfo: { flex: 1, gap: 2 },
+  cardNome: { fontFamily: fontes.titulo, color: cores.pergaminho, fontSize: 15, letterSpacing: 0.6 },
   fab: {
     position: "absolute",
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#D4AF37",
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
-    elevation: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-    borderWidth: 2,
-    borderColor: "#FFF"
+    borderWidth: 1,
+    borderColor: cores.ouroClaro,
+    ...brilhoOuro,
   },
-
   footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
 });

@@ -6,15 +6,15 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   Alert,
-  TextInput,
   Modal,
+  ScrollView,
 } from "react-native";
 
+import { Botao, BotaoIcone, Cabecalho, Campo, Cartao, EstadoVazio, Tela, estiloCartao } from "@/components/ui";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
-import { Ionicons } from "@expo/vector-icons";
+import { cores, fontes, tipo } from "@/theme/tema";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -129,225 +129,76 @@ export default function Guildas() {
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          paddingTop: insets.top + 20,
-        },
-      ]}
-    >
-      <TouchableOpacity
-        style={styles.botaoVoltar}
-        onPress={() => router.back()}
-      >
-        <Ionicons
-          name="arrow-back"
-          size={24}
-          color="#FFF"
-        />
-      </TouchableOpacity>
+    <Tela>
+      <Cabecalho titulo="Guildas" subtitulo="Estandartes registrados no reino" />
 
-      <TouchableOpacity
-        style={styles.botaoCriar}
-        onPress={abrirCriacao}
-      >
-        <Ionicons
-          name="add-circle"
-          size={20}
-          color="#111"
-        />
+      <View style={styles.container}>
+        <Botao titulo="Criar Guilda" icone="add-circle" onPress={abrirCriacao} />
 
-        <Text style={styles.botaoCriarTexto}>
-          Criar Guilda
-        </Text>
-      </TouchableOpacity>
+        <FlatList
+          data={guildas}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10, paddingTop: 16, paddingBottom: insets.bottom + 30 }}
+          ListEmptyComponent={
+            <EstadoVazio icone="shield-outline" texto="Nenhuma guilda cadastrada" />
+          }
+          renderItem={({ item }) => (
+            <View style={[estiloCartao.base, estiloCartao.linha]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nome}>{item.nome}</Text>
+                <Text style={tipo.suave}>{item.descricao}</Text>
+              </View>
 
-      <FlatList
-        data={guildas}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.nome}>
-                {item.nome}
-              </Text>
-
-              <Text style={styles.descricao}>
-                {item.descricao}
-              </Text>
+              <BotaoIcone icone="create-outline" tamanho={38} onPress={() => editarGuilda(item)} />
+              <BotaoIcone
+                icone="trash-outline"
+                tamanho={38}
+                cor={cores.vinhoClaro}
+                style={styles.btnExcluir}
+                onPress={() => deletarGuilda(item.id)}
+              />
             </View>
-
-            <TouchableOpacity
-              onPress={() => editarGuilda(item)}
-            >
-              <Ionicons
-                name="create"
-                size={24}
-                color="#D4AF37"
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => deletarGuilda(item.id)}
-            >
-              <Ionicons
-                name="trash"
-                size={24}
-                color="red"
-              />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+          )}
+        />
+      </View>
 
       <Modal visible={modal} animationType="slide">
-        <View style={styles.modal}>
-          <TouchableOpacity
-            style={styles.botaoVoltar}
-            onPress={() => setModal(false)}
+        <Tela>
+          <Cabecalho
+            titulo={editandoId ? "Editar Guilda" : "Nova Guilda"}
+            aoVoltar={() => setModal(false)}
+          />
+          <ScrollView
+            contentContainerStyle={styles.modal}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons
-              name="arrow-back"
-              size={24}
-              color="#FFF"
-            />
-          </TouchableOpacity>
+            <Cartao style={{ gap: 14, padding: 18 }}>
+              <Campo label="Nome" icone="shield-outline" placeholder="Nome" value={nome} onChangeText={setNome} />
+              <Campo label="Descrição" placeholder="Descrição" value={descricao} onChangeText={setDescricao} />
+              <Campo label="Banner" icone="link-outline" placeholder="Banner URL" value={banner} onChangeText={setBanner} autoCapitalize="none" />
+              <Campo
+                label="Máx membros"
+                icone="people-outline"
+                placeholder="Máx membros"
+                value={maxMembros}
+                onChangeText={setMaxMembros}
+                keyboardType="numeric"
+              />
+            </Cartao>
 
-          <Text style={styles.tituloModal}>
-            {editandoId
-              ? "Editar Guilda"
-              : "Nova Guilda"}
-          </Text>
-
-          <TextInput
-            placeholder="Nome"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={nome}
-            onChangeText={setNome}
-          />
-
-          <TextInput
-            placeholder="Descrição"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={descricao}
-            onChangeText={setDescricao}
-          />
-
-          <TextInput
-            placeholder="Banner URL"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={banner}
-            onChangeText={setBanner}
-          />
-
-          <TextInput
-            placeholder="Máx membros"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={maxMembros}
-            onChangeText={setMaxMembros}
-            keyboardType="numeric"
-          />
-
-          <TouchableOpacity
-            style={styles.salvar}
-            onPress={salvarGuilda}
-          >
-            <Text style={styles.salvarTexto}>
-              Salvar
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <Botao titulo="Salvar" icone="save-outline" onPress={salvarGuilda} />
+          </ScrollView>
+        </Tela>
       </Modal>
-    </View>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#111",
-    paddingHorizontal: 20,
-  },
-
-  botaoVoltar: {
-    marginBottom: 20,
-  },
-
-  botaoCriar: {
-    backgroundColor: "#D4AF37",
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 20,
-  },
-
-  botaoCriarTexto: {
-    color: "#111",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
-  card: {
-    backgroundColor: "#1E1E1E",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-
-  nome: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  descricao: {
-    color: "#AAA",
-    marginTop: 4,
-  },
-
-  modal: {
-    flex: 1,
-    backgroundColor: "#111",
-    padding: 20,
-    paddingTop: 60,
-  },
-
-  tituloModal: {
-    color: "#D4AF37",
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-
-  input: {
-    backgroundColor: "#1E1E1E",
-    color: "#FFF",
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
-
-  salvar: {
-    backgroundColor: "#D4AF37",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-
-  salvarTexto: {
-    color: "#111",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 6 },
+  nome: { fontFamily: fontes.titulo, color: cores.pergaminho, fontSize: 15, letterSpacing: 0.6 },
+  btnExcluir: { backgroundColor: "rgba(142,42,42,0.25)", borderColor: "rgba(224,98,90,0.4)" },
+  modal: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 40, gap: 18 },
 });

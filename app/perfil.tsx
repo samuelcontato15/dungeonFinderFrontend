@@ -1,6 +1,8 @@
 import BarraNavegacao from "@/components/BarraNavegacao";
+import { Avatar, Botao, EstadoVazio, Selo, Tela, TituloSecao } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { cores, fontes, raios, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -9,9 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  ImageBackground,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -104,7 +104,7 @@ export default function Perfil() {
     setCarregandoFavoritos(true);
     try {
       const response = await api.get(`/jogos_favoritos/usuario/${user.id}`);
-      
+
       const listaJogos = response.data.map((fav: any) => fav.jogo);
       setFavoritos(listaJogos);
     } catch (error: any) {
@@ -207,137 +207,149 @@ export default function Perfil() {
   };
 
   return (
-    <ImageBackground
-      source={require("../assets/fundoperfil.png")}
-      style={estilos.fundo}
-    >
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
-
+    <Tela>
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 10,
-          paddingBottom: 120,
+          paddingTop: insets.top + 12,
+          paddingBottom: 130,
           paddingHorizontal: 20,
         }}
       >
         {/* HEADER */}
         <View style={estilos.header}>
-          <TouchableOpacity
-            style={estilos.botao}
+          <Botao
+            titulo="Configurações"
+            icone="settings-outline"
+            variante="neutro"
+            pequeno
             onPress={() => router.push("/config")}
-          >
-            <Text style={estilos.botaoTxt}>Configurações</Text>
-          </TouchableOpacity>
+          />
 
           {user?.isAdmin && (
-            <TouchableOpacity
-              style={estilos.botaoAdmin}
+            <Botao
+              titulo="Admin"
+              icone="shield-checkmark"
+              pequeno
               onPress={() => router.push("/admin")}
-            >
-              <Text style={estilos.botaoAdminTxt}>Admin</Text>
-            </TouchableOpacity>
+            />
           )}
 
-          <TouchableOpacity style={estilos.botao} onPress={handleLogout}>
-            <Text style={estilos.botaoTxt}>Sair</Text>
-          </TouchableOpacity>
+          <Botao
+            titulo="Sair"
+            icone="log-out-outline"
+            variante="neutro"
+            pequeno
+            onPress={handleLogout}
+          />
         </View>
 
-       
-        <View style={estilos.perfil}>
-          <View style={{ alignItems: "center" }}>
-            <TouchableOpacity onPress={escolherImagem}>
-              {foto ? (
-                <Image source={{ uri: foto }} style={estilos.avatar} />
-              ) : (
-                <View style={estilos.avatarFake}>
-                  <Ionicons name="person" size={40} color="#333" />
-                </View>
-              )}
-            </TouchableOpacity>
+        {/* HERÓI */}
+        <View style={estilos.heroi}>
+          <TouchableOpacity onPress={escolherImagem} activeOpacity={0.85}>
+            <Avatar uri={foto} tamanho={112} destaque />
+            <View style={estilos.camera}>
+              <Ionicons name="camera" size={15} color={cores.tinta} />
+            </View>
+          </TouchableOpacity>
 
+          <Text style={estilos.nome} numberOfLines={1}>
+            {nickLocal.toUpperCase() || "USUÁRIO"}
+          </Text>
+
+          <View style={estilos.acoesFoto}>
             <TouchableOpacity onPress={escolherImagem}>
               <Text style={estilos.btnMini}>Alterar foto</Text>
             </TouchableOpacity>
-
             {foto && (
-              <TouchableOpacity onPress={removerImagem}>
-                <Text style={estilos.btnMini}>Remover foto</Text>
-              </TouchableOpacity>
+              <>
+                <Text style={estilos.ponto}>◆</Text>
+                <TouchableOpacity onPress={removerImagem}>
+                  <Text style={estilos.btnMini}>Remover foto</Text>
+                </TouchableOpacity>
+              </>
             )}
           </View>
 
-          <View style={{ flex: 1 }}>
-            <Text style={estilos.nome}>
-              {nickLocal.toUpperCase() || "USUÁRIO"}
-            </Text>
-
-            <View style={estilos.bioBox}>
-              <View style={estilos.bioHeader}>
-                <Text style={estilos.bioTitulo}>Bio</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setEditandoBio(!editandoBio);
-                    if (!editandoBio) setTemAlteracoes(true);
-                  }}
-                >
-                  <Ionicons name="pencil-outline" size={16} color="#333" />
-                </TouchableOpacity>
-              </View>
-
-              {editandoBio ? (
-                <>
-                  <TextInput
-                    style={estilos.inputBio}
-                    value={bio}
-                    onChangeText={(t) => {
-                      setBio(t);
-                      setTemAlteracoes(true);
-                    }}
-                    multiline
-                    maxLength={500}
-                    textAlignVertical="top"
-                  />
-                  <Text style={estilos.contadorCaracteres}>
-                    {bio.length}/500
-                  </Text>
-                </>
-              ) : (
-                <Text style={estilos.bioTexto}>{bio}</Text>
-              )}
+          <View style={estilos.numeros}>
+            <View style={estilos.numero}>
+              <Text style={estilos.numeroValor}>{amigos.length}</Text>
+              <Text style={tipo.rotulo}>Amigos</Text>
+            </View>
+            <View style={estilos.numeroDivisor} />
+            <View style={estilos.numero}>
+              <Text style={estilos.numeroValor}>{favoritos.length}</Text>
+              <Text style={tipo.rotulo}>Favoritos</Text>
             </View>
           </View>
         </View>
 
-        
-        {temAlteracoes && (
-          <TouchableOpacity
-            style={estilos.botaoSalvar}
-            onPress={salvarPerfil}
-            disabled={salvando}
-          >
-            {salvando ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <>
-                <Ionicons name="save-outline" size={20} color="#FFF" />
-                <Text style={estilos.botaoSalvarTxt}>Salvar alterações</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        )}
+        {/* BIO */}
+        <View style={estilos.bioBox}>
+          <View style={estilos.bioHeader}>
+            <Text style={estilos.bioTitulo}>Bio</Text>
+            <TouchableOpacity
+              hitSlop={10}
+              onPress={() => {
+                setEditandoBio(!editandoBio);
+                if (!editandoBio) setTemAlteracoes(true);
+              }}
+            >
+              <Ionicons
+                name={editandoBio ? "close" : "pencil-outline"}
+                size={17}
+                color={cores.madeira600}
+              />
+            </TouchableOpacity>
+          </View>
 
-        
-        <View style={estilos.tituloRow}>
-          <Text style={estilos.titulo}>AMIGOS</Text>
-          <TouchableOpacity onPress={() => router.push("/amigos")}>
-            <Text style={estilos.linkAcao}>+ Adicionar amigo</Text>
-          </TouchableOpacity>
+          {editandoBio ? (
+            <>
+              <TextInput
+                style={estilos.inputBio}
+                value={bio}
+                onChangeText={(t) => {
+                  setBio(t);
+                  setTemAlteracoes(true);
+                }}
+                multiline
+                maxLength={500}
+                textAlignVertical="top"
+                selectionColor={cores.ouroEscuro}
+              />
+              <Text style={estilos.contadorCaracteres}>
+                {bio.length}/500
+              </Text>
+            </>
+          ) : (
+            <Text style={estilos.bioTexto}>{bio}</Text>
+          )}
         </View>
 
+        {temAlteracoes && (
+          <Botao
+            titulo="Salvar alterações"
+            icone="save-outline"
+            variante="sucesso"
+            onPress={salvarPerfil}
+            carregando={salvando}
+            style={{ marginTop: 14 }}
+          />
+        )}
+
+        {/* AMIGOS */}
+        <TituloSecao
+          titulo="Amigos"
+          style={{ marginTop: 28 }}
+          direita={
+            <TouchableOpacity onPress={() => router.push("/amigos")}>
+              <Text style={estilos.linkAcao}>+ Adicionar amigo</Text>
+            </TouchableOpacity>
+          }
+        />
+
         {amigos.length === 0 ? (
-          <Text style={estilos.msgVazia}>Nenhum amigo adicionado</Text>
+          <EstadoVazio icone="people-outline" texto="Nenhum amigo adicionado" />
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {amigos.map((a) => (
@@ -347,57 +359,53 @@ export default function Perfil() {
                 onPress={() => router.push(`/detalhes/usuario/${a.id}`)}
                 activeOpacity={0.7}
               >
-                <View style={estilos.avatarAmigo}>
-                  {a.fotoPerfil ? (
-                    <Image
-                      source={{ uri: a.fotoPerfil }}
-                      style={{ width: 45, height: 45 }}
-                    />
-                  ) : (
-                    <Ionicons name="person" size={22} color="#E8D5A3" />
-                  )}
-                </View>
-                <Text style={estilos.nomeAmigo}>{a.nick}</Text>
+                <Avatar uri={a.fotoPerfil} tamanho={54} />
+                <Text style={estilos.nomeAmigo} numberOfLines={1}>{a.nick}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
         )}
 
-        
-        <View style={estilos.tituloRow}>
-          <Text style={estilos.titulo}>JOGOS FAVORITOS</Text>
-          <TouchableOpacity
-            onPress={() => setEditandoFavoritos(!editandoFavoritos)}
-          >
-            <Text style={estilos.linkAcao}>
-              {editandoFavoritos ? "Fechar" : "Editar"}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* FAVORITOS */}
+        <TituloSecao
+          titulo="Jogos favoritos"
+          style={{ marginTop: 28 }}
+          direita={
+            <TouchableOpacity
+              onPress={() => setEditandoFavoritos(!editandoFavoritos)}
+            >
+              <Text style={estilos.linkAcao}>
+                {editandoFavoritos ? "Fechar" : "Editar"}
+              </Text>
+            </TouchableOpacity>
+          }
+        />
 
         {carregandoFavoritos ? (
-          <ActivityIndicator color="#D4AF37" style={{ marginVertical: 10 }} />
+          <ActivityIndicator color={cores.ouro} style={{ marginVertical: 10 }} />
         ) : favoritos.length === 0 && !editandoFavoritos ? (
-          <Text style={estilos.msgVazia}>Nenhum jogo favorito adicionado</Text>
+          <EstadoVazio
+            icone="game-controller-outline"
+            texto="Nenhum jogo favorito adicionado"
+          />
         ) : null}
 
-        
         <View style={estilos.favoritos}>
           {favoritos.map((jogo) => (
             <View key={jogo.id} style={estilos.jogoFavItem}>
-              {jogo.capa ? (
-                <Image source={{ uri: jogo.capa }} style={estilos.img} />
-              ) : (
-                <View style={estilos.placeholderImg}>
-                  <Ionicons name="game-controller" size={28} color="#D4AF37" />
-                </View>
-              )}
-              <Text style={estilos.jogoFavNome}>{jogo.nome.toUpperCase()}</Text>
+              <Avatar
+                uri={jogo.capa}
+                tamanho={72}
+                icone="game-controller"
+                quadrado
+              />
+              <Text style={estilos.jogoFavNome} numberOfLines={2}>
+                {jogo.nome.toUpperCase()}
+              </Text>
             </View>
           ))}
         </View>
 
-       
         {editandoFavoritos && (
           <View style={estilos.listaJogos}>
             {jogos.map((jogo) => {
@@ -409,24 +417,22 @@ export default function Perfil() {
                   style={[estilos.jogoItem, isFav && estilos.jogoItemAtivo]}
                   onPress={() => toggleFavorito(jogo.id)}
                   disabled={estaSalvando}
+                  activeOpacity={0.8}
                 >
                   {jogo.capa ? (
                     <Image source={{ uri: jogo.capa }} style={estilos.jogoItemImg} />
                   ) : (
-                    <View style={estilos.jogoItemImgPlaceholder}>
-                      {estaSalvando ? (
-                        <ActivityIndicator size="small" color="#FFF" />
-                      ) : (
-                        <Ionicons name="game-controller" size={20} color="#FFF" />
-                      )}
+                    <View style={[estilos.jogoItemImg, estilos.jogoItemImgPlaceholder]}>
+                      <Ionicons name="game-controller" size={20} color={cores.ouro} />
                     </View>
                   )}
-                  <Text style={estilos.jogoItemNome}>{jogo.nome}</Text>
-                  {isFav && !estaSalvando && (
-                    <View style={estilos.favBadge}>
-                      <Ionicons name="checkmark" size={14} color="#FFF" />
-                      <Text style={estilos.favBadgeTxt}>Favorito</Text>
-                    </View>
+                  <Text style={estilos.jogoItemNome} numberOfLines={1}>{jogo.nome}</Text>
+                  {estaSalvando ? (
+                    <ActivityIndicator size="small" color={cores.ouro} />
+                  ) : isFav ? (
+                    <Selo texto="Favorito" icone="star" />
+                  ) : (
+                    <Ionicons name="star-outline" size={18} color={cores.textoApagado} />
                   )}
                 </TouchableOpacity>
               );
@@ -438,172 +444,124 @@ export default function Perfil() {
       <View style={estilos.footer}>
         <BarraNavegacao />
       </View>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.65)",
-  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 20,
-    gap: 10,
+    gap: 8,
   },
-  botao: {
-    backgroundColor: "#555",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+  heroi: { alignItems: "center", marginTop: 22 },
+  camera: {
+    position: "absolute",
+    right: 2,
+    bottom: 2,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: cores.ouro,
+    borderWidth: 2,
+    borderColor: cores.madeira900,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  botaoTxt: { color: "#FFF", fontSize: 12 },
-  botaoAdmin: {
-    backgroundColor: "#D4AF37",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+  nome: { ...tipo.display, fontSize: 24, marginTop: 14 },
+  acoesFoto: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
+  btnMini: { fontFamily: fontes.corpo, color: cores.textoSuave, fontSize: 14 },
+  ponto: { color: cores.ouroEscuro, fontSize: 7 },
+  numeros: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 18,
+    backgroundColor: cores.cartao,
+    borderRadius: raios.g,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    paddingVertical: 12,
   },
-  botaoAdminTxt: { color: "#000", fontWeight: "bold", fontSize: 12 },
-  perfil: { flexDirection: "row", gap: 15, marginBottom: 20 },
-  nome: { color: "#E8D5A3", fontSize: 20, fontWeight: "bold", marginBottom: 6 },
-  bioBox: { backgroundColor: "#FFF", borderRadius: 10, padding: 10 },
+  numero: { alignItems: "center", paddingHorizontal: 34 },
+  numeroValor: { fontFamily: fontes.tituloBlack, color: cores.ouroClaro, fontSize: 22 },
+  numeroDivisor: { width: 1, height: 30, backgroundColor: cores.borda },
+
+  bioBox: {
+    backgroundColor: cores.pergaminho,
+    borderRadius: raios.m,
+    borderWidth: 1,
+    borderColor: cores.ouroEscuro,
+    padding: 16,
+    marginTop: 22,
+  },
   bioHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 5,
+    alignItems: "center",
+    marginBottom: 6,
   },
-  bioTitulo: { fontWeight: "bold", color: "#333" },
-  bioTexto: { color: "#333", fontSize: 13 },
+  bioTitulo: {
+    fontFamily: fontes.titulo,
+    color: cores.madeira600,
+    fontSize: 12,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+  },
+  bioTexto: { fontFamily: fontes.corpo, color: cores.tinta, fontSize: 17, lineHeight: 23 },
   inputBio: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 8,
-    minHeight: 60,
-    fontSize: 13,
+    borderColor: "rgba(58,40,24,0.4)",
+    backgroundColor: "rgba(255,255,255,0.35)",
+    borderRadius: raios.p,
+    padding: 10,
+    minHeight: 80,
+    fontFamily: fontes.corpo,
+    fontSize: 17,
+    color: cores.tinta,
   },
   contadorCaracteres: {
-    fontSize: 11,
-    color: "#999",
+    fontFamily: fontes.corpoItalico,
+    fontSize: 13,
+    color: cores.madeira600,
     textAlign: "right",
     marginTop: 4,
   },
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    borderWidth: 2,
-    borderColor: "#E8D5A3",
-  },
-  avatarFake: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#D4AF37",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  btnMini: { color: "#CCC", fontSize: 11, marginTop: 5, textAlign: "center" },
-  botaoSalvar: {
-    backgroundColor: "#4CAF50",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  botaoSalvarTxt: { color: "#FFF", fontWeight: "bold", fontSize: 15 },
-  tituloRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  titulo: { color: "#E8D5A3", fontSize: 15, fontWeight: "bold" },
-  linkAcao: { color: "#D4AF37", fontSize: 13 },
-  itemAmigo: { alignItems: "center", marginRight: 15, width: 65 },
-  avatarAmigo: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: "#444",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E8D5A3",
-  },
-  nomeAmigo: { color: "#FFF", fontSize: 11, marginTop: 4, textAlign: "center" },
-  msgVazia: {
-    color: "#999",
-    fontStyle: "italic",
-    marginBottom: 10,
-    fontSize: 13,
-  },
-  favoritos: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 10,
-  },
-  jogoFavItem: { alignItems: "center", width: 65 },
+
+  linkAcao: { fontFamily: fontes.corpoForte, color: cores.ouro, fontSize: 14 },
+  itemAmigo: { alignItems: "center", marginRight: 14, width: 68, gap: 6 },
+  nomeAmigo: { ...tipo.suave, color: cores.texto, fontSize: 13, textAlign: "center" },
+
+  favoritos: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
+  jogoFavItem: { alignItems: "center", width: 76, gap: 6 },
   jogoFavNome: {
-    color: "#FFF",
-    fontSize: 10,
+    fontFamily: fontes.titulo,
+    color: cores.pergaminho,
+    fontSize: 9,
+    letterSpacing: 0.5,
     textAlign: "center",
-    marginTop: 4,
   },
-  img: { width: 60, height: 60, borderRadius: 8 },
-  placeholderImg: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    backgroundColor: "#2A2A2A",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D4AF37",
-  },
-  listaJogos: { gap: 8, marginBottom: 10 },
+
+  listaJogos: { gap: 8, marginTop: 14 },
   jogoItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 8,
+    backgroundColor: cores.cartao,
+    borderRadius: raios.m,
+    borderWidth: 1,
+    borderColor: cores.linha,
     padding: 8,
-    gap: 10,
+    gap: 12,
   },
   jogoItemAtivo: {
-    backgroundColor: "rgba(212,175,55,0.2)",
-    borderWidth: 1,
-    borderColor: "#D4AF37",
+    backgroundColor: "rgba(212,175,55,0.12)",
+    borderColor: cores.bordaForte,
   },
-  jogoItemImg: { width: 45, height: 45, borderRadius: 6 },
+  jogoItemImg: { width: 46, height: 46, borderRadius: raios.p },
   jogoItemImgPlaceholder: {
-    width: 45,
-    height: 45,
-    borderRadius: 6,
-    backgroundColor: "#2A2A2A",
+    backgroundColor: cores.madeira700,
     justifyContent: "center",
     alignItems: "center",
   },
-  jogoItemNome: { color: "#FFF", fontSize: 14, flex: 1 },
-  favBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#4CAF50",
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    gap: 3,
-  },
-  favBadgeTxt: { color: "#FFF", fontSize: 11 },
+  jogoItemNome: { ...tipo.subtitulo, fontSize: 16, flex: 1 },
   footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
 });

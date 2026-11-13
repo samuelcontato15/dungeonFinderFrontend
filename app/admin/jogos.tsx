@@ -2,19 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Image,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
+import { Avatar, Botao, Cabecalho, Campo, Cartao, EstadoVazio, Selo, Tela, TituloSecao, estiloCartao } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { cores, fontes, raios, tipo } from "@/theme/tema";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const categoriasBase = [
   { nome: "Novidade", valor: "NOVIDADE" },
@@ -190,15 +191,17 @@ export default function Jogos() {
     carregarJogos();
   }, []);
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Gerenciar Jogos</Text>
+  const insets = useSafeAreaInsets();
 
-      <View style={styles.formCard}>
-        <TextInput
-          style={styles.input}
+  const formulario = (
+    <View style={{ gap: 20, marginBottom: 6 }}>
+      <Cartao style={styles.formCard} destaque={!!editandoId}>
+        {editandoId && <Selo texto="Editando jogo" icone="create" tom="ambar" />}
+
+        <Campo
+          label="Nome do jogo *"
+          icone="game-controller-outline"
           placeholder="Nome do jogo *"
-          placeholderTextColor="#999"
           value={nome}
           onChangeText={setNome}
         />
@@ -207,134 +210,141 @@ export default function Jogos() {
           <Text style={styles.slugPreview}>Slug: {gerarSlug(nome)}</Text>
         )}
 
-        <Text style={styles.label}>Categorias *</Text>
-        <View style={styles.checkboxGroup}>
-          {categoriasBase.map(cat => (
-            <TouchableOpacity
-              key={cat.valor}
-              style={styles.checkbox}
-              onPress={() => toggleCheckbox(cat.valor)}
-            >
-              <Ionicons
-                name={checkboxes.includes(cat.valor) ? "checkbox" : "square-outline"}
-                size={22}
-                color="#D4AF37"
-              />
-              <Text style={styles.checkboxLabel}>{cat.nome}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={{ gap: 8 }}>
+          <Text style={tipo.rotulo}>Categorias *</Text>
+          <View style={styles.checkboxGroup}>
+            {categoriasBase.map(cat => {
+              const marcado = checkboxes.includes(cat.valor);
+              return (
+                <TouchableOpacity
+                  key={cat.valor}
+                  style={[styles.checkbox, marcado && styles.checkboxAtivo]}
+                  onPress={() => toggleCheckbox(cat.valor)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={marcado ? "checkbox" : "square-outline"}
+                    size={18}
+                    color={marcado ? cores.ouroClaro : cores.textoApagado}
+                  />
+                  <Text style={[styles.checkboxLabel, marcado && { color: cores.ouroClaro }]}>{cat.nome}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
 
-        <Text style={styles.label}>Capa do jogo</Text>
-        {capa ? (
-          <View style={styles.previewContainer}>
-            <Image source={{ uri: capa }} style={styles.previewCapa} />
-            <View style={styles.botoesCapa}>
-              <TouchableOpacity style={styles.botaoEscolherCapa} onPress={escolherImagem}>
-                <Ionicons name="image-outline" size={16} color="#FFF" />
-                <Text style={styles.botaoTxt}>Trocar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.botaoRemoverCapa} onPress={removerCapa}>
-                <Ionicons name="trash-outline" size={16} color="#FFF" />
-                <Text style={styles.botaoTxt}>Remover</Text>
-              </TouchableOpacity>
+        <View style={{ gap: 8 }}>
+          <Text style={tipo.rotulo}>Capa do jogo</Text>
+          {capa ? (
+            <View style={{ gap: 10 }}>
+              <Image source={{ uri: capa }} style={styles.previewCapa} />
+              <View style={styles.botoesCapa}>
+                <Botao titulo="Trocar" icone="image-outline" variante="secundario" pequeno onPress={escolherImagem} />
+                <Botao titulo="Remover" icone="trash-outline" variante="perigo" pequeno onPress={removerCapa} />
+              </View>
             </View>
-          </View>
-        ) : (
-          <TouchableOpacity style={styles.botaoSelecionarCapa} onPress={escolherImagem}>
-            <Ionicons name="cloud-upload-outline" size={20} color="#D4AF37" />
-            <Text style={styles.botaoSelecionarCapaTxt}>Escolher imagem da galeria</Text>
-          </TouchableOpacity>
-        )}
-
-        <TextInput
-          style={[styles.input, styles.inputUrl]}
-          placeholder="Ou insira URL da capa (opcional)"
-          placeholderTextColor="#888"
-          value={capa}
-          onChangeText={setCapa}
-        />
-
-        <View style={styles.formButtons}>
-          <TouchableOpacity style={styles.botaoSalvar} onPress={salvarJogo} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <Text style={styles.botaoTxt}>{editandoId ? "Atualizar Jogo" : "Criar Jogo"}</Text>
-            )}
-          </TouchableOpacity>
-
-          {editandoId && (
-            <TouchableOpacity style={styles.botaoCancelar} onPress={limparFormulario}>
-              <Text style={styles.botaoTxt}>Cancelar</Text>
+          ) : (
+            <TouchableOpacity style={styles.botaoSelecionarCapa} onPress={escolherImagem} activeOpacity={0.8}>
+              <Ionicons name="cloud-upload-outline" size={20} color={cores.ouro} />
+              <Text style={tipo.italico}>Escolher imagem da galeria</Text>
             </TouchableOpacity>
           )}
+
+          <Campo
+            icone="link-outline"
+            placeholder="Ou insira URL da capa (opcional)"
+            value={capa}
+            onChangeText={setCapa}
+            autoCapitalize="none"
+          />
         </View>
-      </View>
+
+        <View style={styles.formButtons}>
+          <Botao
+            titulo={editandoId ? "Atualizar Jogo" : "Criar Jogo"}
+            onPress={salvarJogo}
+            carregando={loading}
+            style={{ flex: 1 }}
+          />
+
+          {editandoId && (
+            <Botao titulo="Cancelar" variante="neutro" onPress={limparFormulario} style={{ flex: 1 }} />
+          )}
+        </View>
+      </Cartao>
+
+      <TituloSecao titulo="Jogos cadastrados" style={{ marginBottom: 0 }} />
+    </View>
+  );
+
+  return (
+    <Tela>
+      <Cabecalho titulo="Gerenciar Jogos" subtitulo="O catálogo de aventuras" />
 
       <FlatList
         data={jogos}
         keyExtractor={item => item.id}
+        ListHeaderComponent={formulario}
+        ListEmptyComponent={
+          <EstadoVazio icone="game-controller-outline" texto="Nenhum jogo cadastrado" />
+        }
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            {item.capa ? (
-              <Image source={{ uri: item.capa }} style={styles.cardCapa} />
-            ) : (
-              <View style={styles.cardCapaPlaceholder}>
-                <Ionicons name="game-controller" size={24} color="#555" />
-              </View>
-            )}
+          <View style={[estiloCartao.base, estiloCartao.linha, { padding: 10 }]}>
+            <Avatar uri={item.capa} tamanho={60} icone="game-controller" quadrado />
             <View style={styles.cardInfo}>
-              <Text style={styles.nome}>{item.nome}</Text>
-              <Text style={styles.slug}>slug: {item.slug}</Text>
-              <Text style={styles.categoria}>categoria: {item.categoria || "MMO"}</Text>
+              <Text style={styles.nome} numberOfLines={1}>{item.nome}</Text>
+              <Text style={styles.slug} numberOfLines={1}>slug: {item.slug}</Text>
+              <Selo texto={item.categoria || "MMO"} />
             </View>
             <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.editar} onPress={() => iniciarEdicao(item)}>
-                <Text style={styles.botaoTxt}>Editar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.deletar} onPress={() => deletarJogo(item.id)}>
-                <Text style={styles.botaoTxt}>Deletar</Text>
-              </TouchableOpacity>
+              <Botao titulo="Editar" variante="secundario" pequeno onPress={() => iniciarEdicao(item)} />
+              <Botao titulo="Deletar" variante="perigo" pequeno onPress={() => deletarJogo(item.id)} />
             </View>
           </View>
         )}
-        contentContainerStyle={{ paddingBottom: 20 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: insets.bottom + 30, gap: 10 }}
       />
-    </View>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#111", padding: 20 },
-  title: { color: "#D4AF37", fontSize: 28, fontWeight: "bold", marginTop: 40, marginBottom: 20, textAlign: "center" },
-  formCard: { backgroundColor: "#1E1E1E", borderRadius: 16, padding: 16, marginBottom: 24, borderWidth: 1, borderColor: "#333" },
-  input: { backgroundColor: "#2A2A2A", color: "#FFF", borderRadius: 10, padding: 12, marginBottom: 12, fontSize: 16 },
-  inputUrl: { marginTop: 8, borderTopWidth: 1, borderTopColor: "#333" },
-  label: { color: "#CCC", fontSize: 14, marginBottom: 6, marginTop: 4 },
-  slugPreview: { color: "#AAA", fontSize: 12, marginTop: -6, marginBottom: 12, paddingLeft: 4 },
-  checkboxGroup: { flexDirection: "row", gap: 20, marginBottom: 12 },
-  checkbox: { flexDirection: "row", alignItems: "center", gap: 6 },
-  checkboxLabel: { color: "#FFF", fontSize: 14 },
-  botaoSelecionarCapa: { flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#2A2A2A", borderRadius: 10, paddingVertical: 12, marginBottom: 12, gap: 8, borderWidth: 1, borderColor: "#D4AF37", borderStyle: "dashed" },
-  botaoSelecionarCapaTxt: { color: "#D4AF37", fontSize: 14, fontWeight: "500" },
-  previewContainer: { alignItems: "center", marginBottom: 12 },
-  previewCapa: { width: "100%", height: 150, borderRadius: 12, marginBottom: 8, backgroundColor: "#000", resizeMode: "cover" },
-  botoesCapa: { flexDirection: "row", gap: 12 },
-  botaoEscolherCapa: { flexDirection: "row", alignItems: "center", backgroundColor: "#1565C0", paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, gap: 6 },
-  botaoRemoverCapa: { flexDirection: "row", alignItems: "center", backgroundColor: "#B00020", paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, gap: 6 },
-  formButtons: { flexDirection: "row", gap: 12, marginTop: 8 },
-  botaoSalvar: { flex: 1, backgroundColor: "#D4AF37", paddingVertical: 12, borderRadius: 10, alignItems: "center" },
-  botaoCancelar: { flex: 1, backgroundColor: "#555", paddingVertical: 12, borderRadius: 10, alignItems: "center" },
-  botaoTxt: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
-  card: { backgroundColor: "#1E1E1E", borderRadius: 12, padding: 12, marginBottom: 12, flexDirection: "row", alignItems: "center", borderWidth: 1, borderColor: "#2A2A2A" },
-  cardCapa: { width: 60, height: 60, borderRadius: 8, marginRight: 12, backgroundColor: "#000" },
-  cardCapaPlaceholder: { width: 60, height: 60, borderRadius: 8, marginRight: 12, backgroundColor: "#2A2A2A", justifyContent: "center", alignItems: "center" },
-  cardInfo: { flex: 1 },
-  nome: { color: "#FFF", fontSize: 16, fontWeight: "bold", marginBottom: 2 },
-  slug: { color: "#AAA", fontSize: 12 },
-  categoria: { color: "#D4AF37", fontSize: 11, marginTop: 2 },
+  formCard: { gap: 16, padding: 18 },
+  slugPreview: { fontFamily: fontes.corpoItalico, color: cores.textoSuave, fontSize: 14, marginTop: -8 },
+  checkboxGroup: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  checkbox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: raios.pilula,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    backgroundColor: cores.campo,
+  },
+  checkboxAtivo: { borderColor: cores.ouro, backgroundColor: "rgba(212,175,55,0.14)" },
+  checkboxLabel: { fontFamily: fontes.corpoForte, color: cores.textoSuave, fontSize: 15 },
+  botaoSelecionarCapa: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: cores.campo,
+    borderRadius: raios.m,
+    paddingVertical: 18,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: cores.bordaForte,
+    borderStyle: "dashed",
+  },
+  previewCapa: { width: "100%", height: 150, borderRadius: raios.m, backgroundColor: cores.madeira900, resizeMode: "cover" },
+  botoesCapa: { flexDirection: "row", gap: 10 },
+  formButtons: { flexDirection: "row", gap: 12 },
+  cardInfo: { flex: 1, gap: 3 },
+  nome: { fontFamily: fontes.titulo, color: cores.pergaminho, fontSize: 14, letterSpacing: 0.5 },
+  slug: { ...tipo.suave, fontSize: 13 },
   cardActions: { gap: 8 },
-  editar: { backgroundColor: "#1565C0", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, alignItems: "center" },
-  deletar: { backgroundColor: "#B00020", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, alignItems: "center" },
 });

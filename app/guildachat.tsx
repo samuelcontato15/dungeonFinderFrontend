@@ -1,22 +1,23 @@
+import { Avatar, Cabecalho, EstadoVazio, Tela } from "@/components/ui";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/services/api";
+import { cores, fontes, gradientes, raios } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  ImageBackground,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@/context/AuthContext";
-import api from "@/services/api";
 
 export default function ChatGuilda() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -62,35 +63,44 @@ export default function ChatGuilda() {
   }
 
   return (
-    <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo}>
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
-
-      <View style={[estilos.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
-        </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>TAVERNA DA GUILDA</Text>
-        <Ionicons name="information-circle-outline" size={24} color="#E8D5A3" />
+    <Tela>
+      <View style={estilos.header}>
+        <Cabecalho
+          titulo="Taverna da Guilda"
+          subtitulo="Conversa entre os membros"
+          direita={<Ionicons name="beer-outline" size={22} color={cores.ouro} />}
+        />
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <ScrollView 
+        <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={estilos.chatArea}
+          showsVerticalScrollIndicator={false}
           onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
         >
+          {mensagens.length === 0 && (
+            <EstadoVazio
+              icone="chatbubbles-outline"
+              texto="A taverna está em silêncio."
+              dica="Mande a primeira mensagem para a guilda."
+            />
+          )}
           {mensagens.map((msg) => {
             const isMe = msg.usuario?.id === user?.id;
             return (
-              <View key={msg.id} style={[estilos.balaoWrapper, isMe ? estilos.minhaMensagem : estilos.mensagemOutro]}>
-                {!isMe && <Text style={estilos.nomeUsuario}>{msg.usuario?.nick || "Membro"}</Text>}
-                <View style={[estilos.balao, isMe ? estilos.balaoMeu : estilos.balaoDele]}>
-                  <Text style={estilos.textoMensagem}>{msg.conteudo}</Text>
+              <View key={msg.id} style={[estilos.linhaMensagem, isMe && { flexDirection: "row-reverse" }]}>
+                {!isMe && <Avatar uri={msg.usuario?.fotoPerfil} tamanho={30} />}
+                <View style={[estilos.balaoWrapper, isMe ? estilos.minhaMensagem : estilos.mensagemOutro]}>
+                  {!isMe && <Text style={estilos.nomeUsuario}>{msg.usuario?.nick || "Membro"}</Text>}
+                  <View style={[estilos.balao, isMe ? estilos.balaoMeu : estilos.balaoDele]}>
+                    {isMe && <LinearGradient colors={gradientes.ouro} style={StyleSheet.absoluteFill} />}
+                    <Text style={estilos.textoMensagem}>{msg.conteudo}</Text>
+                  </View>
                 </View>
               </View>
             );
@@ -98,37 +108,52 @@ export default function ChatGuilda() {
         </ScrollView>
 
         <View style={[estilos.inputContainer, { paddingBottom: insets.bottom + 10 }]}>
-          <TextInput 
-            style={estilos.input} 
-            placeholder="Digite uma mensagem..." 
-            placeholderTextColor="#888"
+          <TextInput
+            style={estilos.input}
+            placeholder="Digite uma mensagem..."
+            placeholderTextColor={cores.textoApagado}
+            selectionColor={cores.ouro}
             value={texto}
             onChangeText={setTexto}
+            onSubmitEditing={enviarMensagem}
+            returnKeyType="send"
           />
-          <TouchableOpacity style={estilos.btnEnviar} onPress={enviarMensagem}>
-            <Ionicons name="send" size={20} color="#1a1008" />
+          <TouchableOpacity style={estilos.btnEnviar} onPress={enviarMensagem} activeOpacity={0.8}>
+            <LinearGradient colors={gradientes.ouro} style={StyleSheet.absoluteFill} />
+            <Ionicons name="send" size={18} color={cores.tinta} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.85)" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingBottom: 15, borderBottomWidth: 1, borderColor: "rgba(212,175,55,0.2)" },
-  headerTitulo: { color: "#E8D5A3", fontSize: 16, fontWeight: "bold", fontFamily: "serif" },
-  chatArea: { padding: 20, gap: 15 },
-  balaoWrapper: { maxWidth: "80%" },
-  minhaMensagem: { alignSelf: "flex-end" },
-  mensagemOutro: { alignSelf: "flex-start" },
-  nomeUsuario: { color: "#D4AF37", fontSize: 10, marginBottom: 2, marginLeft: 5 },
-  balao: { padding: 10, borderRadius: 15 },
-  balaoMeu: { backgroundColor: "#D4AF37", borderBottomRightRadius: 0 },
-  balaoDele: { backgroundColor: "#EAE0D5", borderTopLeftRadius: 0 },
-  textoMensagem: { color: "#1a1008", fontSize: 14 },
-  inputContainer: { flexDirection: "row", padding: 15, backgroundColor: "#1a1008", borderTopWidth: 1, borderColor: "rgba(212,175,55,0.2)", alignItems: "center", gap: 10 },
-  input: { flex: 1, backgroundColor: "rgba(232,213,163,0.9)", borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, color: "#1a1008" },
-  btnEnviar: { backgroundColor: "#D4AF37", width: 40, height: 40, borderRadius: 20, justifyContent: "center", alignItems: "center" },
+  header: { borderBottomWidth: 1, borderColor: cores.borda, backgroundColor: "rgba(13,8,5,0.7)" },
+  chatArea: { padding: 16, gap: 12, flexGrow: 1 },
+  linhaMensagem: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
+  balaoWrapper: { maxWidth: "78%" },
+  minhaMensagem: { alignItems: "flex-end" },
+  mensagemOutro: { alignItems: "flex-start" },
+  nomeUsuario: { fontFamily: fontes.titulo, color: cores.ouro, fontSize: 10, letterSpacing: 0.8, marginBottom: 3, marginLeft: 4 },
+  balao: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: raios.g, overflow: "hidden" },
+  balaoMeu: { backgroundColor: cores.ouro, borderBottomRightRadius: 4 },
+  balaoDele: { backgroundColor: cores.pergaminho, borderBottomLeftRadius: 4 },
+  textoMensagem: { fontFamily: fontes.corpo, color: cores.tinta, fontSize: 17, lineHeight: 22 },
+  inputContainer: { flexDirection: "row", paddingHorizontal: 14, paddingTop: 10, backgroundColor: "rgba(13,8,5,0.96)", borderTopWidth: 1, borderColor: cores.borda, alignItems: "center", gap: 10 },
+  input: {
+    flex: 1,
+    minHeight: 44,
+    backgroundColor: cores.campo,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontFamily: fontes.corpo,
+    fontSize: 17,
+    color: cores.texto,
+    ...({ outlineStyle: "none" } as object),
+  },
+  btnEnviar: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", justifyContent: "center", alignItems: "center" },
 });

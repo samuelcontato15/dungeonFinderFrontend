@@ -7,13 +7,26 @@ import {
   View,
 } from "react-native";
 
+import { Botao, Cabecalho, Tela } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { cores, fontes, raios, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const SECOES = [
+  { chave: "usuarios", icone: "people", titulo: "Gerenciar Usuários", texto: "Visualizar, editar e remover usuários", rota: "/admin/usuarios", acao: "Abrir gerenciamento" },
+  { chave: "jogos", icone: "game-controller", titulo: "Gerenciar Jogos", texto: "Adicionar e editar jogos", rota: "/admin/jogos", acao: "Abrir gerenciamento" },
+  { chave: "guildas", icone: "shield", titulo: "Gerenciar Guildas", texto: "Controlar guildas e membros", rota: "/admin/guildas", acao: "Abrir gerenciamento" },
+  { chave: "eventos", icone: "calendar", titulo: "Gerenciar Eventos", texto: "Criar e editar eventos", rota: "/admin/eventos", acao: "Abrir gerenciamento" },
+  { chave: "raids", icone: "skull", titulo: "Gerenciar Raids", texto: "Organizar raids do sistema", rota: "/admin/raids", acao: "Abrir gerenciamento" },
+  { chave: "relatorios", icone: "bar-chart", titulo: "Relatórios", texto: "Estatísticas da plataforma", rota: "/admin/relatorios", acao: "Abrir relatórios" },
+] as const;
 
 export default function Admin() {
   const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const [abaAberta, setAbaAberta] = useState<string | null>(null);
 
@@ -26,215 +39,85 @@ export default function Admin() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Painel Administrativo</Text>
+    <Tela>
+      <Cabecalho
+        titulo="Painel Administrativo"
+        subtitulo={`Bem-vindo, ${user.usuario}`}
+      />
 
-      <Text style={styles.subtitle}>Bem-vindo, {user.usuario}</Text>
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleAba("usuarios")}
+      <ScrollView
+        contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 30 }]}
+        showsVerticalScrollIndicator={false}
       >
-        <Ionicons name="people" size={28} color="#D4AF37" />
+        {SECOES.map((secao) => {
+          const aberta = abaAberta === secao.chave;
+          return (
+            <TouchableOpacity
+              key={secao.chave}
+              style={[styles.card, aberta && styles.cardAberto]}
+              onPress={() => toggleAba(secao.chave)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.linha}>
+                <View style={styles.icone}>
+                  <Ionicons name={secao.icone} size={24} color={cores.ouro} />
+                </View>
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Gerenciar Usuários</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitle}>{secao.titulo}</Text>
+                  <Text style={tipo.suave}>{secao.texto}</Text>
+                </View>
 
-          <Text style={styles.cardText}>
-            Visualizar, editar e remover usuários
-          </Text>
+                <Ionicons
+                  name={aberta ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color={cores.ouro}
+                />
+              </View>
 
-          {abaAberta === "usuarios" && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => router.push("/admin/usuarios")}
-              >
-                <Text style={styles.menuText}>Abrir gerenciamento</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.card} onPress={() => toggleAba("jogos")}>
-        <Ionicons name="game-controller" size={28} color="#D4AF37" />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Gerenciar Jogos</Text>
-
-          <Text style={styles.cardText}>Adicionar e editar jogos</Text>
-
-          {abaAberta === "jogos" && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => router.push("/admin/jogos")}
-              >
-                <Text style={styles.menuText}>Abrir gerenciamento</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleAba("guildas")}
-      >
-        <Ionicons name="shield" size={28} color="#D4AF37" />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Gerenciar Guildas</Text>
-
-          <Text style={styles.cardText}>Controlar guildas e membros</Text>
-
-          {abaAberta === "guildas" && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => router.push("/admin/guildas")}
-              >
-                <Text style={styles.menuText}>Abrir gerenciamento</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleAba("eventos")}
-      >
-        <Ionicons name="calendar" size={28} color="#D4AF37" />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Gerenciar Eventos</Text>
-
-          <Text style={styles.cardText}>Criar e editar eventos</Text>
-
-          {abaAberta === "eventos" && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => router.push("/admin/eventos")}
-              >
-                <Text style={styles.menuText}>Abrir gerenciamento</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-
-      <TouchableOpacity style={styles.card} onPress={() => toggleAba("raids")}>
-        <Ionicons name="skull" size={28} color="#D4AF37" />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Gerenciar Raids</Text>
-
-          <Text style={styles.cardText}>Organizar raids do sistema</Text>
-
-          {abaAberta === "raids" && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => router.push("/admin/raids")}
-              >
-                <Text style={styles.menuText}>Abrir gerenciamento</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-
-
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => toggleAba("relatorios")}
-      >
-        <Ionicons name="bar-chart" size={28} color="#D4AF37" />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.cardTitle}>Relatórios</Text>
-
-          <Text style={styles.cardText}>Estatísticas da plataforma</Text>
-
-          {abaAberta === "relatorios" && (
-            <View style={styles.menu}>
-              <TouchableOpacity
-                style={styles.menuButton}
-                onPress={() => router.push("/admin/relatorios")}
-              >
-                <Text style={styles.menuText}>Abrir relatórios</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    </ScrollView>
+              {aberta && (
+                <Botao
+                  titulo={secao.acao}
+                  icone="arrow-forward"
+                  pequeno
+                  onPress={() => router.push(secao.rota)}
+                  style={styles.menuButton}
+                />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    backgroundColor: "#111",
-    padding: 20,
-    gap: 16,
-  },
-
-  title: {
-    color: "#D4AF37",
-    fontSize: 30,
-    fontWeight: "bold",
-    marginTop: 40,
-  },
-
-  subtitle: {
-    color: "#FFF",
-    fontSize: 16,
-    marginBottom: 20,
-  },
-
+  container: { paddingHorizontal: 20, paddingTop: 6, gap: 12 },
   card: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 18,
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 16,
+    backgroundColor: cores.cartao,
+    borderRadius: raios.g,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: cores.borda,
   },
-
+  cardAberto: { borderColor: cores.bordaForte },
+  linha: { flexDirection: "row", alignItems: "center", gap: 14 },
+  icone: {
+    width: 48,
+    height: 48,
+    borderRadius: raios.m,
+    backgroundColor: "rgba(212,175,55,0.1)",
+    borderWidth: 1,
+    borderColor: cores.borda,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   cardTitle: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: fontes.titulo,
+    color: cores.pergaminho,
+    fontSize: 15,
+    letterSpacing: 0.6,
   },
-
-  cardText: {
-    color: "#AAA",
-    marginTop: 4,
-    width: 220,
-  },
-
-  menu: {
-    marginTop: 14,
-  },
-
-  menuButton: {
-    backgroundColor: "#D4AF37",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignSelf: "flex-start",
-  },
-
-  menuText: {
-    color: "#111",
-    fontWeight: "bold",
-  },
+  menuButton: { alignSelf: "flex-start", marginTop: 14, marginLeft: 62 },
 });

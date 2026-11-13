@@ -1,18 +1,16 @@
+import { Botao, BotaoIcone, Campo, Cartao, Tela } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { cores, fontes, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -77,16 +75,6 @@ function isEmailDuplicado(e: any): boolean {
   return false;
 }
 
-function ErroTexto({ msg }: { msg?: string }) {
-  if (!msg) return null;
-  return (
-    <View style={estilos.erroLinha}>
-      <Ionicons name="alert-circle-outline" size={13} color="#FF6B6B" />
-      <Text style={estilos.erroTexto}>{msg}</Text>
-    </View>
-  );
-}
-
 
 export default function Cadastro() {
   const router = useRouter();
@@ -121,7 +109,7 @@ export default function Cadastro() {
         if (!valor) novosErros.senha = "Informe a senha.";
         else if (valor.length < 6) novosErros.senha = "Mínimo de 6 caracteres.";
         else delete novosErros.senha;
-        
+
         if (confirmarSenha && valor !== confirmarSenha)
           novosErros.confirmarSenha = "As senhas não coincidem.";
         else if (confirmarSenha && valor === confirmarSenha)
@@ -168,18 +156,8 @@ export default function Cadastro() {
     }
   }
 
-  const inputBorda = (campo: keyof CamposErro) =>
-    erros[campo] ? estilos.inputErro : null;
-
   return (
-    <ImageBackground
-      source={require("../assets/fundo1.png")}
-      style={estilos.fundo}
-      resizeMode="cover"
-    >
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
-
+    <Tela>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -192,37 +170,31 @@ export default function Cadastro() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          
-          <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#D4AF37" />
-            <Text style={estilos.btnVoltarTexto}>Voltar</Text>
-          </TouchableOpacity>
+          <BotaoIcone icone="chevron-back" onPress={() => router.back()} />
 
-          <Text style={estilos.titulo}>Cadastro</Text>
+          <View style={{ marginTop: 8 }}>
+            <Text style={estilos.titulo}>Cadastro</Text>
+            <Text style={tipo.italico}>Todo herói começa escolhendo um nome.</Text>
+          </View>
 
-          
-          <View style={estilos.campoWrapper}>
-            <Text style={estilos.label}>Usuário</Text>
-            <TextInput
-              style={[estilos.input, inputBorda("usuario")]}
+          <Cartao style={estilos.cartao}>
+            <Campo
+              label="Usuário"
+              icone="person-outline"
+              erro={erros.usuario}
               placeholder="Escolha um nome de herói"
-              placeholderTextColor="#888"
               value={usuario}
               onChangeText={(v) => { setUsuario(v); if (erros.usuario) validarCampo("usuario", v); }}
               onBlur={() => validarCampo("usuario", usuario)}
               autoCapitalize="none"
               maxLength={15}
             />
-            <ErroTexto msg={erros.usuario} />
-          </View>
 
-          
-          <View style={estilos.campoWrapper}>
-            <Text style={estilos.label}>Email</Text>
-            <TextInput
-              style={[estilos.input, inputBorda("email")]}
+            <Campo
+              label="Email"
+              icone="mail-outline"
+              erro={erros.email}
               placeholder="seu@email.com"
-              placeholderTextColor="#888"
               value={email}
               onChangeText={(v) => { setEmail(v); if (erros.email) validarCampo("email", v); }}
               onBlur={() => validarCampo("email", email)}
@@ -230,158 +202,59 @@ export default function Cadastro() {
               autoCapitalize="none"
               autoCorrect={false}
             />
-            <ErroTexto msg={erros.email} />
-          </View>
 
-          
-          <View style={estilos.campoWrapper}>
-            <Text style={estilos.label}>Senha</Text>
-            <View>
-              <TextInput
-                style={[estilos.input, estilos.senhaInput, inputBorda("senha")]}
-                placeholder="Mínimo 6 caracteres"
-                placeholderTextColor="#888"
-                value={senha}
-                onChangeText={(v) => { setSenha(v); if (erros.senha || erros.confirmarSenha) validarCampo("senha", v); }}
-                onBlur={() => validarCampo("senha", senha)}
-                secureTextEntry={!mostrarSenha}
-              />
-              <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={estilos.olho}>
-                <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color="#555" />
-              </TouchableOpacity>
-            </View>
-            <ErroTexto msg={erros.senha} />
-          </View>
+            <Campo
+              label="Senha"
+              icone="lock-closed-outline"
+              erro={erros.senha}
+              placeholder="Mínimo 6 caracteres"
+              value={senha}
+              onChangeText={(v) => { setSenha(v); if (erros.senha || erros.confirmarSenha) validarCampo("senha", v); }}
+              onBlur={() => validarCampo("senha", senha)}
+              secureTextEntry={!mostrarSenha}
+              direita={
+                <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} hitSlop={10}>
+                  <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={cores.textoSuave} />
+                </TouchableOpacity>
+              }
+            />
 
-          
-          <View style={estilos.campoWrapper}>
-            <Text style={estilos.label}>Confirmar senha</Text>
-            <TextInput
-              style={[estilos.input, inputBorda("confirmarSenha")]}
+            <Campo
+              label="Confirmar senha"
+              icone="lock-closed-outline"
+              erro={erros.confirmarSenha}
               placeholder="Repita a senha"
-              placeholderTextColor="#888"
               value={confirmarSenha}
               onChangeText={(v) => { setConfirmarSenha(v); if (erros.confirmarSenha) validarCampo("confirmarSenha", v); }}
               onBlur={() => validarCampo("confirmarSenha", confirmarSenha)}
               secureTextEntry={!mostrarSenha}
             />
-            <ErroTexto msg={erros.confirmarSenha} />
-          </View>
 
-         
-          <TouchableOpacity
-            style={[
-              estilos.botao,
-              (carregando || !usuario || !email || !senha || !confirmarSenha) && { opacity: 0.5 },
-            ]}
-            onPress={handleCadastrar}
-            disabled={carregando || !usuario || !email || !senha || !confirmarSenha}
-            activeOpacity={0.8}
-          >
-            {carregando
-              ? <ActivityIndicator color="#1a1008" />
-              : <Text style={estilos.botaoTexto}>Cadastrar</Text>
-            }
-          </TouchableOpacity>
+            <Botao
+              titulo="Cadastrar"
+              onPress={handleCadastrar}
+              carregando={carregando}
+              disabled={carregando || !usuario || !email || !senha || !confirmarSenha}
+              style={{ marginTop: 4 }}
+            />
+          </Cartao>
 
           <View style={estilos.loginLinha}>
-            <Text style={estilos.loginTexto}>Já tem conta? </Text>
+            <Text style={tipo.suave}>Já tem conta? </Text>
             <TouchableOpacity onPress={() => router.replace("/login")}>
               <Text style={estilos.loginLink}>Entrar</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.60)",
-  },
-  scroll: {
-    paddingHorizontal: 28,
-    gap: 14,
-  },
-  btnVoltar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    marginBottom: 8,
-  },
-  btnVoltarTexto: { color: "#D4AF37", fontSize: 14 },
-  titulo: {
-    fontSize: 30,
-    fontWeight: "900",
-    color: "#E8D5A3",
-    letterSpacing: 2,
-    marginBottom: 4,
-    textShadowColor: "rgba(0,0,0,0.8)",
-    textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 4,
-  },
-  campoWrapper: { gap: 4 },
-  label: {
-    color: "#E8D5A3",
-    fontSize: 13,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-  },
-  input: {
-    backgroundColor: "rgba(232,213,163,0.85)",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    fontSize: 14,
-    color: "#1a1008",
-    borderWidth: 1.5,
-    borderColor: "transparent",
-  },
-  inputErro: {
-    borderColor: "#FF6B6B",
-  },
-  senhaInput: {
-    paddingRight: 46,
-  },
-  olho: {
-    position: "absolute",
-    right: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-  },
-  erroLinha: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 2,
-  },
-  erroTexto: {
-    color: "#FF6B6B",
-    fontSize: 12,
-  },
-  botao: {
-    backgroundColor: "#D4AF37",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 6,
-  },
-  botaoTexto: {
-    color: "#1a1008",
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
-  loginLinha: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 4,
-  },
-  loginTexto: { color: "#999", fontSize: 13 },
-  loginLink: { color: "#D4AF37", fontSize: 13, fontWeight: "700" },
+  scroll: { paddingHorizontal: 24, gap: 16 },
+  titulo: { ...tipo.display, fontSize: 34, color: cores.pergaminho, letterSpacing: 3 },
+  cartao: { gap: 14, padding: 20 },
+  loginLinha: { flexDirection: "row", justifyContent: "center" },
+  loginLink: { fontFamily: fontes.corpoForte, color: cores.ouro, fontSize: 14 },
 });

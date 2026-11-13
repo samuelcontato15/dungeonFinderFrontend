@@ -5,7 +5,10 @@ import {
   StyleSheet,
 } from "react-native";
 
+import { Cabecalho, Tela } from "@/components/ui";
 import api from "@/services/api";
+import { cores, fontes, raios, tipo } from "@/theme/tema";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function Relatorios() {
   const [usuarios, setUsuarios] = useState(0);
@@ -30,77 +33,54 @@ export default function Relatorios() {
     carregarDados();
   }, []);
 
+  const cartoes = [
+    { rotulo: "Usuários", valor: usuarios, icone: "people" },
+    { rotulo: "Jogos", valor: jogos, icone: "game-controller" },
+    { rotulo: "Raids", valor: raids, icone: "skull" },
+  ] as const;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        Relatórios
-      </Text>
+    <Tela>
+      <Cabecalho titulo="Relatórios" subtitulo="Os números da plataforma" />
 
-      <View style={styles.card}>
-        <Text style={styles.numero}>
-          {usuarios}
-        </Text>
-
-        <Text style={styles.label}>
-          Usuários
-        </Text>
+      <View style={styles.container}>
+        {cartoes.map((c) => (
+          <View key={c.rotulo} style={styles.card}>
+            <View style={styles.icone}>
+              <Ionicons name={c.icone} size={26} color={cores.ouro} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={tipo.rotulo}>{c.rotulo}</Text>
+              <Text style={styles.numero}>{c.valor}</Text>
+            </View>
+          </View>
+        ))}
       </View>
-
-      <View style={styles.card}>
-        <Text style={styles.numero}>
-          {jogos}
-        </Text>
-
-        <Text style={styles.label}>
-          Jogos
-        </Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.numero}>
-          {raids}
-        </Text>
-
-        <Text style={styles.label}>
-          Raids
-        </Text>
-      </View>
-    </View>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#111",
-    padding: 20,
-  },
-
-  title: {
-    color: "#D4AF37",
-    fontSize: 30,
-    fontWeight: "bold",
-    marginTop: 40,
-    marginBottom: 30,
-  },
-
+  container: { paddingHorizontal: 20, paddingTop: 6, gap: 14 },
   card: {
-    backgroundColor: "#1E1E1E",
-    padding: 25,
-    borderRadius: 14,
-    marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 18,
+    backgroundColor: cores.cartao,
+    padding: 20,
+    borderRadius: raios.g,
+    borderWidth: 1,
+    borderColor: cores.borda,
+  },
+  icone: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "rgba(212,175,55,0.1)",
+    borderWidth: 1,
+    borderColor: cores.borda,
+    justifyContent: "center",
     alignItems: "center",
   },
-
-  numero: {
-    color: "#D4AF37",
-    fontSize: 42,
-    fontWeight: "bold",
-  },
-
-  label: {
-    color: "#FFF",
-    marginTop: 10,
-    fontSize: 18,
-  },
+  numero: { fontFamily: fontes.tituloBlack, color: cores.ouroClaro, fontSize: 38, lineHeight: 46 },
 });

@@ -1,17 +1,17 @@
 import BarraNavegacao from "@/components/BarraNavegacao";
+import { Avatar, Botao, BotaoIcone, Carregando, Selo, Tela, TituloSecao } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { cores, fontes, gradientes, raios, sombra, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Image,
   ImageBackground,
   Modal,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -81,82 +81,74 @@ export default function DetalhesGuilda() {
 
   if (carregando || !guilda) {
     return (
-      <View style={estilos.loadingContainer}>
-        <ActivityIndicator size="large" color="#D4AF37" />
-      </View>
+      <Tela>
+        <Carregando />
+      </Tela>
     );
   }
 
   return (
-    <ImageBackground source={require("../../../assets/fundo1.png")} style={estilos.fundo}>
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
-
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+    <Tela>
+      <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
         <ImageBackground
           source={guilda.banner ? { uri: guilda.banner } : require("../../../assets/fundo1.png")}
-          style={[estilos.banner, { paddingTop: insets.top + 10 }]}
+          style={[estilos.banner, { height: 250 + insets.top }]}
         >
-          <View style={estilos.bannerOverlay} />
+          <LinearGradient colors={gradientes.capa} locations={[0, 0.55, 1]} style={StyleSheet.absoluteFill} />
 
-          {/* Botão Voltar (esquerda) */}
-          <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
+          <BotaoIcone
+            icone="chevron-back"
+            onPress={() => router.back()}
+            style={{ position: "absolute", top: insets.top + 10, left: 16 }}
+          />
 
           <View style={estilos.bannerInfo}>
             <Text style={estilos.tituloGuilda}>{guilda.nome}</Text>
-            <Text style={estilos.textoCriador}>feito por: {guilda.criadoPor?.nick}</Text>
             <Text style={estilos.textoCriador}>
-              criada em {new Date(guilda.criadoEm).toLocaleDateString("pt-BR")}
+              fundada por {guilda.criadoPor?.nick} em{" "}
+              {new Date(guilda.criadoEm).toLocaleDateString("pt-BR")}
             </Text>
-            <View style={estilos.badgeMembros}>
-              <Ionicons name="people" size={16} color="#FFF" />
-              <Text style={estilos.textoMembros}>{membros.length} / {guilda.maxMembros} membros</Text>
+            <View style={estilos.selos}>
+              <Selo texto={`${membros.length} / ${guilda.maxMembros} membros`} icone="people" />
+              {!!guilda.jogo?.nome && (
+                <Selo texto={guilda.jogo.nome} icone="game-controller" tom="neutro" />
+              )}
             </View>
           </View>
         </ImageBackground>
 
         <View style={estilos.container}>
-          <View style={estilos.jogoLinha}>
-            <Text style={estilos.labelJogos}>JOGOS:</Text>
-            <Text style={estilos.nomeJogo}>{guilda.jogo?.nome}</Text>
-          </View>
-
           <View style={estilos.mensagemFixadaHeader}>
-            <Ionicons name="pin" size={14} color="#D4AF37" />
-            <Text style={estilos.textoFixado}>Mensagem fixada</Text>
+            <Ionicons name="pin" size={13} color={cores.ouro} />
+            <Text style={tipo.rotulo}>Mensagem fixada</Text>
           </View>
 
           <View style={estilos.chatContainer}>
             <View style={estilos.avatarChat}>
-              {guilda.criadoPor?.fotoPerfil ? (
-                <Image source={{ uri: guilda.criadoPor.fotoPerfil }} style={estilos.imgAvatar} />
-              ) : (
-                <View style={[estilos.imgAvatar, { backgroundColor: "#444", justifyContent: "center", alignItems: "center" }]}>
-                  <Ionicons name="person" size={18} color="#D4AF37" />
-                </View>
-              )}
+              <Avatar uri={guilda.criadoPor?.fotoPerfil} tamanho={42} destaque />
               <Text style={estilos.nomeAvatarChat}>Admin</Text>
             </View>
 
             <TouchableOpacity
               style={estilos.balaoMensagem}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
               onPress={() => router.push({ pathname: "/guildachat", params: { id } } as any)}
             >
               <Text style={estilos.textoBalaoCorpo}>{guilda.descricao}</Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={estilos.tituloSessao}>Membros nessa guilda</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={estilos.listaAmigos}>
+          <TituloSecao titulo="Membros" style={{ marginTop: 28 }} />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.listaAmigos}>
             {isLider && (
               <TouchableOpacity
-                style={estilos.btnAddAmigo}
+                style={estilos.avatarAmigoContainer}
                 onPress={() => router.push({ pathname: "/amigos", params: { guildaId: id } } as any)}
               >
-                <Ionicons name="add" size={24} color="#D4AF37" />
+                <View style={estilos.btnAddAmigo}>
+                  <Ionicons name="add" size={24} color={cores.ouro} />
+                </View>
+                <Text style={estilos.nickMembro}>Convidar</Text>
               </TouchableOpacity>
             )}
             {membros.map((m) => (
@@ -170,60 +162,55 @@ export default function DetalhesGuilda() {
                   }
                 }}
               >
-                {m.usuario?.fotoPerfil ? (
-                  <Image source={{ uri: m.usuario.fotoPerfil }} style={estilos.avatarAmigo} />
-                ) : (
-                  <View style={[estilos.avatarAmigo, { backgroundColor: "#444", justifyContent: "center", alignItems: "center" }]}>
-                    <Ionicons name="person" size={20} color="#D4AF37" />
-                  </View>
-                )}
+                <Avatar uri={m.usuario?.fotoPerfil} tamanho={54} destaque={m.papel === "LIDER"} />
                 <Text style={estilos.nickMembro} numberOfLines={1}>{m.usuario?.nick}</Text>
                 {m.papel === "LIDER" && (
-                  <Ionicons name="star" size={12} color="#D4AF37" style={estilos.iconeLider} />
+                  <View style={estilos.iconeLider}>
+                    <Ionicons name="star" size={10} color={cores.tinta} />
+                  </View>
                 )}
               </TouchableOpacity>
             ))}
           </ScrollView>
 
-          {!isMembro && (
-            <TouchableOpacity
-              style={[estilos.btnJuntar, pedidoEnviado && { opacity: 0.5 }]}
-              onPress={handleJuntarSe}
-              disabled={pedidoEnviado}
-            >
-              <Text style={estilos.btnJuntarTxt}>
-                {pedidoEnviado ? "Pedido enviado..." : "Juntar-se"}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <View style={estilos.acoes}>
+            {!isMembro && (
+              <Botao
+                titulo={pedidoEnviado ? "Pedido enviado..." : "Juntar-se"}
+                icone="enter-outline"
+                onPress={handleJuntarSe}
+                disabled={pedidoEnviado}
+              />
+            )}
 
-          {isMembro && !isLider && (
-            <TouchableOpacity
-              style={estilos.btnSair}
-              onPress={() =>
-                Alert.alert("Sair da guilda", "Tem certeza?", [
-                  { text: "Cancelar", style: "cancel" },
-                  {
-                    text: "Sair", style: "destructive", onPress: async () => {
-                      await api.delete(`/guildas/${id}/membros/sair`, {
-                        headers: { "X-Usuario-Id": user?.id },
-                      });
-                      router.back();
-                    }
-                  },
-                ])
-              }
-            >
-              <Text style={estilos.btnSairTxt}>Sair da guilda</Text>
-            </TouchableOpacity>
-          )}
+            <Botao
+              titulo="Taverna da guilda"
+              icone="chatbubbles-outline"
+              variante="secundario"
+              onPress={() => router.push({ pathname: "/guildachat", params: { id } } as any)}
+            />
 
-          <TouchableOpacity
-            style={estilos.btnChat}
-            onPress={() => router.push({ pathname: "/guildachat", params: { id } } as any)}
-          >
-            <Ionicons name="chatbubbles-outline" size={24} color="#D4AF37" />
-          </TouchableOpacity>
+            {isMembro && !isLider && (
+              <Botao
+                titulo="Sair da guilda"
+                icone="exit-outline"
+                variante="perigo"
+                onPress={() =>
+                  Alert.alert("Sair da guilda", "Tem certeza?", [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                      text: "Sair", style: "destructive", onPress: async () => {
+                        await api.delete(`/guildas/${id}/membros/sair`, {
+                          headers: { "X-Usuario-Id": user?.id },
+                        });
+                        router.back();
+                      }
+                    },
+                  ])
+                }
+              />
+            )}
+          </View>
 
         </View>
       </ScrollView>
@@ -232,15 +219,13 @@ export default function DetalhesGuilda() {
         <View style={estilos.modalOverlay}>
           <View style={estilos.modalBox}>
             <Text style={estilos.modalTitulo}>Gerenciar Membro</Text>
-            <Text style={estilos.modalTexto}>
+            <Text style={[tipo.corpo, { marginBottom: 20 }]}>
               Deseja expulsar {membroSelecionado?.usuario?.nick} da guilda?
             </Text>
-            <TouchableOpacity style={estilos.btnModalExpulsar} onPress={handleExpulsar}>
-              <Text style={estilos.btnModalTxt}>Expulsar</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={estilos.btnModalCancelar} onPress={() => setModalExpulsar(false)}>
-              <Text style={estilos.btnModalTxt}>Cancelar</Text>
-            </TouchableOpacity>
+            <View style={{ gap: 10 }}>
+              <Botao titulo="Expulsar" icone="close-circle-outline" variante="perigo" onPress={handleExpulsar} />
+              <Botao titulo="Cancelar" variante="neutro" onPress={() => setModalExpulsar(false)} />
+            </View>
           </View>
         </View>
       </Modal>
@@ -248,53 +233,39 @@ export default function DetalhesGuilda() {
       <View style={estilos.footer}>
         <BarraNavegacao />
       </View>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1, backgroundColor: "#111" },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.8)" },
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#1a1008" },
-  banner: { width: "100%", height: 220, justifyContent: "center", alignItems: "center" },
-  bannerOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.5)" },
-  btnVoltar: { position: "absolute", top: 50, left: 20, zIndex: 10 },
-  bannerInfo: { alignItems: "center", zIndex: 2, marginTop: 20 },
-  tituloGuilda: { color: "#FFF", fontSize: 28, fontWeight: "bold" },
-  textoCriador: { color: "#E8D5A3", fontSize: 12, fontStyle: "italic" },
-  badgeMembros: { flexDirection: "row", alignItems: "center", marginTop: 10, backgroundColor: "rgba(0,0,0,0.6)", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 15 },
-  textoMembros: { color: "#FFF", fontSize: 12, marginLeft: 6 },
-  container: { padding: 20 },
-  jogoLinha: { flexDirection: "row", alignItems: "center", marginBottom: 30, gap: 10 },
-  labelJogos: { color: "#FFF", fontSize: 22 },
-  nomeJogo: { color: "#D4AF37", fontSize: 20, fontWeight: "bold" },
-  mensagemFixadaHeader: { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 5 },
-  textoFixado: { color: "#D4AF37", fontSize: 12 },
-  chatContainer: { flexDirection: "row", gap: 10, marginBottom: 40 },
-  avatarChat: { alignItems: "center" },
-  imgAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: "#D4AF37" },
-  nomeAvatarChat: { color: "#FFF", fontSize: 10, marginTop: 4 },
-  balaoMensagem: { flex: 1, backgroundColor: "#EAE0D5", borderRadius: 15, borderTopLeftRadius: 0, padding: 15 },
-  textoBalaoCorpo: { color: "#5c4033", fontSize: 14, lineHeight: 22 },
-  tituloSessao: { color: "#FFF", fontSize: 20, marginBottom: 15 },
-  listaAmigos: { flexDirection: "row", marginBottom: 30 },
-  btnAddAmigo: { width: 50, height: 50, borderRadius: 25, borderWidth: 1, borderColor: "#D4AF37", borderStyle: "dashed", justifyContent: "center", alignItems: "center", marginRight: 15 },
-  avatarAmigoContainer: { marginRight: 15, alignItems: "center" },
-  avatarAmigo: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: "#FFF" },
-  nickMembro: { color: "#ccc", fontSize: 9, marginTop: 3, maxWidth: 50, textAlign: "center" },
-  iconeLider: { position: "absolute", top: -5, right: -5, backgroundColor: "#000", borderRadius: 10, padding: 2 },
-  btnJuntar: { backgroundColor: "#8c6b22", paddingVertical: 12, paddingHorizontal: 40, borderRadius: 25, alignSelf: "center", borderWidth: 1, borderColor: "#D4AF37", marginTop: 10 },
-  btnJuntarTxt: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
-  btnSair: { backgroundColor: "#B00020", paddingVertical: 12, paddingHorizontal: 40, borderRadius: 25, alignSelf: "center", marginTop: 10 },
-  btnSairTxt: { color: "#FFF", fontWeight: "bold", fontSize: 14 },
-  btnChat: { flexDirection: "row", alignItems: "center", alignSelf: "flex-start", marginTop: 20, gap: 8 },
-  btnChatTxt: { color: "#D4AF37", fontWeight: "bold", fontSize: 14 },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center" },
-  modalBox: { backgroundColor: "#1a1008", padding: 20, borderRadius: 12, width: "80%", borderWidth: 1, borderColor: "#D4AF37" },
-  modalTitulo: { color: "#E8D5A3", fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-  modalTexto: { color: "#FFF", marginBottom: 20 },
-  btnModalExpulsar: { backgroundColor: "#B00020", padding: 12, borderRadius: 8, alignItems: "center", marginBottom: 10 },
-  btnModalCancelar: { backgroundColor: "#444", padding: 12, borderRadius: 8, alignItems: "center" },
-  btnModalTxt: { color: "#FFF", fontWeight: "bold" },
+  banner: { width: "100%", justifyContent: "flex-end", backgroundColor: cores.madeira800 },
+  bannerInfo: { paddingHorizontal: 20, paddingBottom: 18, gap: 6 },
+  tituloGuilda: { ...tipo.display, fontSize: 28, color: cores.pergaminhoClaro, letterSpacing: 1.5 },
+  textoCriador: { ...tipo.italico, color: cores.pergaminho },
+  selos: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
+  container: { paddingHorizontal: 20, paddingTop: 20 },
+  mensagemFixadaHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 },
+  chatContainer: { flexDirection: "row", gap: 12 },
+  avatarChat: { alignItems: "center", gap: 4 },
+  nomeAvatarChat: { fontFamily: fontes.titulo, color: cores.ouro, fontSize: 9, letterSpacing: 0.8 },
+  balaoMensagem: {
+    flex: 1,
+    backgroundColor: cores.pergaminho,
+    borderRadius: raios.g,
+    borderTopLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: cores.ouroEscuro,
+    padding: 16,
+  },
+  textoBalaoCorpo: { fontFamily: fontes.corpo, color: cores.tinta, fontSize: 17, lineHeight: 24 },
+  listaAmigos: { gap: 14, paddingTop: 6, paddingRight: 8 },
+  btnAddAmigo: { width: 54, height: 54, borderRadius: 27, borderWidth: 1, borderColor: cores.ouro, borderStyle: "dashed", justifyContent: "center", alignItems: "center", backgroundColor: "rgba(212,175,55,0.08)" },
+  avatarAmigoContainer: { alignItems: "center", width: 62, gap: 5 },
+  nickMembro: { ...tipo.suave, fontSize: 12, textAlign: "center" },
+  iconeLider: { position: "absolute", top: -4, right: 0, width: 20, height: 20, borderRadius: 10, backgroundColor: cores.ouro, borderWidth: 2, borderColor: cores.madeira900, justifyContent: "center", alignItems: "center" },
+  acoes: { gap: 12, marginTop: 30 },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(5,3,2,0.85)", justifyContent: "center", alignItems: "center" },
+  modalBox: { backgroundColor: cores.madeira800, padding: 22, borderRadius: raios.g, width: "84%", maxWidth: 380, borderWidth: 1, borderColor: cores.bordaForte, ...sombra },
+  modalTitulo: { ...tipo.titulo, fontSize: 18, marginBottom: 10 },
   footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
 });

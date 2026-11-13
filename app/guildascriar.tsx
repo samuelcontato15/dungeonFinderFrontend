@@ -1,19 +1,18 @@
+import { Botao, Cabecalho, Campo, Cartao, Tela } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { cores, fontes, gradientes, raios, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Image,
-  ImageBackground,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -96,99 +95,129 @@ router.replace(`/detalhes/guilda/${res.data.id}`);    } catch (error: any) {
   };
 
   return (
-    <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo}>
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
+    <Tela>
+      <Cabecalho titulo="Criar Guilda" subtitulo="Erga um estandarte para o seu grupo" />
 
-      <View style={[estilos.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
-        </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>CRIAR GUILDA</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScrollView
+        contentContainerStyle={[estilos.container, { paddingBottom: insets.bottom + 40 }]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
 
-      <ScrollView contentContainerStyle={estilos.container}>
-        
         {/* GALERIA - BANNER */}
-        <Text style={estilos.label}>Banner da Guilda</Text>
-        <TouchableOpacity style={estilos.btnGaleria} onPress={escolherImagem}>
-          {bannerBase64 ? (
-            <Image source={{ uri: bannerBase64 }} style={estilos.imgBanner} />
-          ) : (
-            <View style={estilos.galeriaVazia}>
-              <Ionicons name="image-outline" size={40} color="#D4AF37" />
-              <Text style={estilos.galeriaTexto}>Tocar para escolher da galeria</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-
-        <Text style={estilos.label}>Nome da Guilda</Text>
-        <TextInput 
-          style={estilos.input} 
-          placeholder="Ex: Cavaleiros de Azeroth" 
-          placeholderTextColor="#888" 
-          value={nome} 
-          onChangeText={setNome} 
-        />
-
-        <Text style={estilos.label}>Mensagem Inicial / Regras</Text>
-        <TextInput 
-          style={[estilos.input, { height: 100, textAlignVertical: "top" }]} 
-          placeholder="Quais os requisitos para entrar?" 
-          placeholderTextColor="#888" 
-          multiline 
-          value={descricao} 
-          onChangeText={setDescricao} 
-        />
-
-        <Text style={estilos.label}>Selecione os Jogos</Text>
-        <View style={estilos.jogosContainer}>
-          {jogos.map((j) => (
-            <TouchableOpacity 
-              key={j.id} 
-              style={[estilos.jogoBtn, jogosSelecionados.includes(j.id) && estilos.jogoBtnAtivo]} 
-              onPress={() => toggleJogo(j.id)}
-            >
-              <Text style={[estilos.jogoTxt, jogosSelecionados.includes(j.id) && estilos.jogoTxtAtivo]}>
-                {j.nome}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View style={{ gap: 6 }}>
+          <Text style={tipo.rotulo}>Banner da Guilda</Text>
+          <TouchableOpacity style={estilos.btnGaleria} onPress={escolherImagem} activeOpacity={0.85}>
+            {bannerBase64 ? (
+              <>
+                <Image source={{ uri: bannerBase64 }} style={estilos.imgBanner} />
+                <View style={estilos.trocar}>
+                  <Ionicons name="camera" size={14} color={cores.tinta} />
+                </View>
+              </>
+            ) : (
+              <View style={estilos.galeriaVazia}>
+                <Ionicons name="image-outline" size={36} color={cores.ouro} />
+                <Text style={tipo.italico}>Tocar para escolher da galeria</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={estilos.btnCriar} onPress={handleCriar} disabled={carregando}>
-          {carregando ? (
-            <ActivityIndicator color="#1a1008" />
-          ) : (
-            <Text style={estilos.btnCriarTxt}>FORJAR GUILDA</Text>
-          )}
-        </TouchableOpacity>
+        <Cartao style={estilos.cartao}>
+          <Campo
+            label="Nome da Guilda"
+            icone="shield-outline"
+            placeholder="Ex: Cavaleiros de Azeroth"
+            value={nome}
+            onChangeText={setNome}
+          />
+
+          <Campo
+            label="Mensagem Inicial / Regras"
+            placeholder="Quais os requisitos para entrar?"
+            multiline
+            value={descricao}
+            onChangeText={setDescricao}
+          />
+        </Cartao>
+
+        <View style={{ gap: 10 }}>
+          <Text style={tipo.rotulo}>Selecione os Jogos</Text>
+          <View style={estilos.jogosContainer}>
+            {jogos.map((j) => {
+              const ativo = jogosSelecionados.includes(j.id);
+              return (
+                <TouchableOpacity
+                  key={j.id}
+                  style={[estilos.jogoBtn, ativo && estilos.jogoBtnAtivo]}
+                  onPress={() => toggleJogo(j.id)}
+                  activeOpacity={0.8}
+                >
+                  {ativo && <LinearGradient colors={gradientes.ouro} style={StyleSheet.absoluteFill} />}
+                  {ativo && <Ionicons name="checkmark" size={14} color={cores.tinta} />}
+                  <Text style={[estilos.jogoTxt, ativo && estilos.jogoTxtAtivo]}>
+                    {j.nome}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <Botao
+          titulo="Forjar Guilda"
+          icone="hammer-outline"
+          onPress={handleCriar}
+          carregando={carregando}
+          style={{ marginTop: 8 }}
+        />
       </ScrollView>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.75)" },
-  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, marginBottom: 20 },
-  headerTitulo: { color: "#E8D5A3", fontSize: 18, fontWeight: "bold" },
-  container: { padding: 20, paddingBottom: 50 },
-  label: { color: "#D4AF37", fontSize: 14, fontWeight: "bold", marginBottom: 8, marginTop: 15 },
-  input: { backgroundColor: "rgba(232,213,163,0.9)", borderRadius: 8, padding: 12, fontSize: 14, color: "#1a1008" },
-  
-  // Estilos da Galeria
-  btnGaleria: { height: 150, backgroundColor: "rgba(0,0,0,0.5)", borderRadius: 8, borderWidth: 1, borderColor: "#D4AF37", overflow: "hidden", justifyContent: "center", alignItems: "center" },
+  container: { paddingHorizontal: 20, paddingTop: 6, gap: 20 },
+  cartao: { gap: 16, padding: 18 },
+  btnGaleria: {
+    height: 160,
+    backgroundColor: cores.campo,
+    borderRadius: raios.g,
+    borderWidth: 1,
+    borderColor: cores.bordaForte,
+    borderStyle: "dashed",
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   imgBanner: { width: "100%", height: "100%", resizeMode: "cover" },
-  galeriaVazia: { alignItems: "center" },
-  galeriaTexto: { color: "#D4AF37", marginTop: 10, fontSize: 12 },
-
-  jogosContainer: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  jogoBtn: { borderWidth: 1, borderColor: "#D4AF37", borderRadius: 8, padding: 10, backgroundColor: "rgba(0,0,0,0.5)" },
-  jogoBtnAtivo: { backgroundColor: "#D4AF37" },
-  jogoTxt: { color: "#E8D5A3", fontSize: 12 },
-  jogoTxtAtivo: { color: "#1a1008", fontWeight: "bold" },
-  btnCriar: { backgroundColor: "#D4AF37", padding: 15, borderRadius: 8, alignItems: "center", marginTop: 40 },
-  btnCriarTxt: { color: "#1a1008", fontWeight: "bold", fontSize: 16, letterSpacing: 1 },
+  trocar: {
+    position: "absolute",
+    right: 10,
+    bottom: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: cores.ouro,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  galeriaVazia: { alignItems: "center", gap: 8 },
+  jogosContainer: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  jogoBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    borderRadius: raios.pilula,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: cores.cartao,
+    overflow: "hidden",
+  },
+  jogoBtnAtivo: { borderColor: cores.ouroClaro },
+  jogoTxt: { fontFamily: fontes.corpoForte, color: cores.pergaminho, fontSize: 15 },
+  jogoTxtAtivo: { color: cores.tinta },
 });

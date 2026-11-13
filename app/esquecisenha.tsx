@@ -1,19 +1,18 @@
+import { Botao, BotaoIcone, Campo, Cartao, Tela } from "@/components/ui";
+import { cores, tipo } from "@/theme/tema";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  StatusBar,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
-  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function RedefinirSenha() {
@@ -53,158 +52,69 @@ export default function RedefinirSenha() {
   }
 
   return (
-    <ImageBackground
-      source={require("../assets/fundo1.png")} 
-      style={estilos.fundo}
-      resizeMode="cover"
-    >
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
-
+    <Tela>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={[estilos.container, { paddingTop: margens.top + 10, paddingBottom: margens.bottom + 20 }]}>
-          
-          <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#D4AF37" />
-            <Text style={estilos.btnVoltarTexto}>Voltar</Text>
-          </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={[estilos.container, { paddingTop: margens.top + 10, paddingBottom: margens.bottom + 24 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <BotaoIcone icone="chevron-back" onPress={() => router.back()} />
 
           <View style={estilos.corpo}>
-            <Text style={estilos.titulo}>Redefinir Senha</Text>
-
-            <View style={estilos.campoWrapper}>
-              <Text style={estilos.label}>Confirmar Usuário ou Email</Text>
-              <View style={estilos.inputContainer}>
-                <TextInput
-                  style={estilos.input}
-                  placeholder="Seu usuário cadastrado"
-                  placeholderTextColor="#888"
-                  value={usuario}
-                  onChangeText={setUsuario}
-                  autoCapitalize="none"
-                />
-              </View>
+            <View>
+              <Text style={estilos.titulo}>Redefinir Senha</Text>
+              <Text style={tipo.italico}>Até os melhores heróis perdem a chave.</Text>
             </View>
 
-    
-            <View style={estilos.campoWrapper}>
-              <Text style={estilos.label}>Nova Senha</Text>
-              <View style={estilos.inputContainer}>
-                <TextInput
-                  style={[estilos.input, { flex: 1 }]}
-                  placeholder="Digite a nova senha"
-                  placeholderTextColor="#888"
-                  value={novaSenha}
-                  onChangeText={setNovaSenha}
-                  secureTextEntry={!mostrarSenha}
-                />
-              </View>
-            </View>
+            <Cartao style={estilos.cartao}>
+              <Campo
+                label="Confirmar Usuário ou Email"
+                icone="person-outline"
+                placeholder="Seu usuário cadastrado"
+                value={usuario}
+                onChangeText={setUsuario}
+                autoCapitalize="none"
+              />
 
-            {/* Confirmar Senha */}
-            <View style={estilos.campoWrapper}>
-              <Text style={estilos.label}>Confirmar Nova Senha</Text>
-              <View style={estilos.inputContainer}>
-                <TextInput
-                  style={[estilos.input, { flex: 1 }]}
-                  placeholder="Repita a nova senha"
-                  placeholderTextColor="#888"
-                  value={confirmarSenha}
-                  onChangeText={setConfirmarSenha}
-                  secureTextEntry={!mostrarSenha}
-                />
-                <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} style={estilos.olho}>
-                  <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color="#aaa" />
-                </TouchableOpacity>
-              </View>
-            </View>
+              <Campo
+                label="Nova Senha"
+                icone="lock-closed-outline"
+                placeholder="Digite a nova senha"
+                value={novaSenha}
+                onChangeText={setNovaSenha}
+                secureTextEntry={!mostrarSenha}
+              />
 
-            <TouchableOpacity
-              style={[estilos.botao, carregando && { opacity: 0.7 }]}
-              onPress={handleRedefinir}
-              disabled={carregando}
-              activeOpacity={0.8}
-            >
-              {carregando
-                ? <ActivityIndicator color="#1a1008" />
-                : <Text style={estilos.botaoTexto}>Alterar Senha</Text>
-              }
-            </TouchableOpacity>
+              <Campo
+                label="Confirmar Nova Senha"
+                icone="lock-closed-outline"
+                placeholder="Repita a nova senha"
+                value={confirmarSenha}
+                onChangeText={setConfirmarSenha}
+                secureTextEntry={!mostrarSenha}
+                direita={
+                  <TouchableOpacity onPress={() => setMostrarSenha(!mostrarSenha)} hitSlop={10}>
+                    <Ionicons name={mostrarSenha ? "eye-off-outline" : "eye-outline"} size={20} color={cores.textoSuave} />
+                  </TouchableOpacity>
+                }
+              />
 
+              <Botao titulo="Alterar Senha" onPress={handleRedefinir} carregando={carregando} />
+            </Cartao>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.60)",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 28,
-  },
-  btnVoltar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-  },
-  btnVoltarTexto: { color: "#D4AF37", fontSize: 14 },
-  corpo: {
-    flex: 1,
-    justifyContent: "center",
-    gap: 16,
-  },
-  titulo: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#E8D5A3",
-    letterSpacing: 1.5,
-    marginBottom: 8,
-    textShadowColor: "rgba(0,0,0,0.8)",
-    textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 4,
-  },
-  campoWrapper: { gap: 6 },
-  label: {
-    color: "#E8D5A3",
-    fontSize: 13,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(232,213,163,0.85)",
-    borderRadius: 8,
-    paddingHorizontal: 14,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: 13,
-    fontSize: 14,
-    color: "#1a1008",
-  },
-  olho: { paddingLeft: 8 },
-  botao: {
-    backgroundColor: "#D4AF37",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  botaoTexto: {
-    color: "#1a1008",
-    fontSize: 15,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
+  container: { flexGrow: 1, paddingHorizontal: 24 },
+  corpo: { flex: 1, justifyContent: "center", gap: 20, paddingVertical: 24 },
+  titulo: { ...tipo.display, fontSize: 28, color: cores.pergaminho, letterSpacing: 2 },
+  cartao: { gap: 16, padding: 20 },
 });

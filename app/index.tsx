@@ -1,16 +1,16 @@
 import BarraNavegacao from "@/components/BarraNavegacao";
+import { Avatar, Carregando, Divisor, EstadoVazio, Tela, TituloSecao } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
+import { cores, fontes, gradientes, raios, sombra, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Dimensions,
   Image,
-  ImageBackground,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -32,10 +32,46 @@ function contemCategoria(categoria: string, busca: string): boolean {
   return categoria?.toUpperCase().includes(busca);
 }
 
+function SecaoJogos({ titulo, dados, largura, altura, aoAbrir }: {
+  titulo: string; dados: Jogo[]; largura: number; altura: number;
+  aoAbrir: (jogo: Jogo) => void;
+}) {
+  if (dados.length === 0) return null;
+  return (
+    <View style={estilos.secao}>
+      <TituloSecao
+        titulo={titulo}
+        style={{ paddingHorizontal: 20 }}
+        direita={<Text style={estilos.quantidade}>{dados.length} jogos</Text>}
+      />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.fileira}>
+        {dados.map((jogo) => (
+          <TouchableOpacity
+            key={jogo.id}
+            activeOpacity={0.85}
+            onPress={() => aoAbrir(jogo)}
+            style={[estilos.cardJogo, { width: largura, height: altura }]}
+          >
+            {jogo.capa ? (
+              <Image source={{ uri: jogo.capa }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+            ) : (
+              <View style={[StyleSheet.absoluteFill, estilos.semCapa]}>
+                <Ionicons name="game-controller-outline" size={altura * 0.3} color={cores.ouroEscuro} />
+              </View>
+            )}
+            <LinearGradient colors={gradientes.capa} locations={[0.3, 0.65, 1]} style={StyleSheet.absoluteFill} />
+            <Text style={estilos.nomeJogo} numberOfLines={2}>{jogo.nome}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function Inicio() {
   const margens = useSafeAreaInsets();
   const router = useRouter();
-  const { isLoading: authLoading } = useAuth();
+  const { isLoading: authLoading, user, isAuthenticated } = useAuth();
 
   const [jogos, setJogos] = useState<Jogo[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -57,7 +93,7 @@ export default function Inicio() {
   }
 
   function navegarParaJogo(jogo: Jogo) {
-    
+
     router.push({ pathname: "/telaJogo", params: { jogoId: jogo.id } } as any);
   }
 
@@ -65,90 +101,87 @@ export default function Inicio() {
   const games     = jogos.filter(j => contemCategoria(j.categoria, "MMO"));
   const rpgMesa   = jogos.filter(j => contemCategoria(j.categoria, "RPG"));
 
-  function SecaoJogos({ titulo, dados, largura, altura }: {
-    titulo: string; dados: Jogo[]; largura: number; altura: number;
-  }) {
-    if (dados.length === 0) return null;
-    return (
-      <View style={estilos.secao}>
-        <View style={estilos.linhaTitulo}>
-          <View style={estilos.acento} />
-          <Text style={estilos.tituloSecao}>{titulo}</Text>
-          <Text style={estilos.quantidade}>{dados.length} jogos</Text>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.fileira}>
-          {dados.map((jogo) => (
-            <TouchableOpacity
-              key={jogo.id}
-              activeOpacity={0.8}
-              onPress={() => navegarParaJogo(jogo)}
-              style={[estilos.cardJogo, { width: largura }]}
-            >
-              {jogo.capa ? (
-                <Image source={{ uri: jogo.capa }} style={[estilos.imagemJogo, { height: altura }]} resizeMode="cover" />
-              ) : (
-                <View style={[estilos.imagemJogo, { height: altura, backgroundColor: "#2A2A2A", justifyContent: "center", alignItems: "center" }]}>
-                  <Ionicons name="game-controller-outline" size={altura * 0.4} color="#D4AF37" />
-                </View>
-              )}
-              <Text style={estilos.nomeJogo} numberOfLines={1}>{jogo.nome}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        <View style={estilos.divisor} />
-      </View>
-    );
-  }
-
   if (carregando || authLoading) {
     return (
-      <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo} resizeMode="cover">
-        <View style={estilos.overlay} />
-        <View style={estilos.centralizar}>
-          <ActivityIndicator size="large" color="#D4AF37" />
-        </View>
-      </ImageBackground>
+      <Tela>
+        <Carregando texto="Abrindo as portas da taverna…" />
+      </Tela>
     );
   }
 
   return (
-    <ImageBackground source={require("../assets/fundo1.png")} style={estilos.fundo} resizeMode="cover">
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
-
+    <Tela>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[estilos.rolagem, { paddingTop: margens.top + 12 }]}
+        contentContainerStyle={{ paddingTop: margens.top + 16, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <SecaoJogos titulo="NOVIDADES"   dados={novidades} largura={telaLargura * 0.55} altura={130} />
-        <SecaoJogos titulo="GAMES (MMO)" dados={games}     largura={telaLargura * 0.4}  altura={100} />
-        <SecaoJogos titulo="RPG DE MESA" dados={rpgMesa}   largura={telaLargura * 0.35} altura={95}  />
+        <View style={estilos.topo}>
+          <View style={{ flex: 1 }}>
+            <Text style={estilos.saudacao}>
+              {isAuthenticated && user?.usuario
+                ? `Salve, ${user.usuario}`
+                : "Bem-vindo, viajante"}
+            </Text>
+            <Text style={estilos.marca}>DUNGEON FINDER</Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push((isAuthenticated ? "/perfil" : "/dungeonEntrada") as any)}
+          >
+            <Avatar uri={isAuthenticated ? user?.fotoPerfil : null} tamanho={46} destaque />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={estilos.lema}>
+          Escolha um jogo, reúna seu grupo e parta para a próxima raid.
+        </Text>
+
+        <Divisor style={{ marginHorizontal: 20, marginTop: 18 }} />
+
+        <SecaoJogos titulo="Novidades"   dados={novidades} largura={telaLargura * 0.7}  altura={170} aoAbrir={navegarParaJogo} />
+        <SecaoJogos titulo="Games (MMO)" dados={games}     largura={telaLargura * 0.42} altura={190} aoAbrir={navegarParaJogo} />
+        <SecaoJogos titulo="RPG de Mesa" dados={rpgMesa}   largura={telaLargura * 0.42} altura={190} aoAbrir={navegarParaJogo} />
         {jogos.length === 0 && (
-          <Text style={estilos.semJogos}>Nenhum jogo disponível no momento.</Text>
+          <EstadoVazio
+            icone="game-controller-outline"
+            texto="Nenhum jogo disponível no momento."
+            dica="Volte mais tarde — novas aventuras chegam em breve."
+          />
         )}
-        <View style={{ height: 20 }} />
       </ScrollView>
 
       <BarraNavegacao />
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo:      { flex: 1 },
-  overlay:    { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
-  rolagem:    { paddingHorizontal: 16, paddingBottom: 10 },
-  centralizar:{ flex: 1, justifyContent: "center", alignItems: "center" },
-  secao:      { marginTop: 24 },
-  linhaTitulo:{ flexDirection: "row", alignItems: "baseline", marginBottom: 12, flexWrap: "wrap" },
-  acento:     { width: 4, height: 18, backgroundColor: "#D4AF37", borderRadius: 2, marginRight: 8 },
-  tituloSecao:{ color: "#fff", fontSize: 18, fontWeight: "bold", letterSpacing: 1.5, textTransform: "uppercase" },
-  quantidade: { color: "#D4AF37", fontSize: 12, marginLeft: 8, fontWeight: "500" },
-  fileira:    { paddingLeft: 2, paddingRight: 8, gap: 12 },
-  cardJogo:   { borderRadius: 12, overflow: "hidden", backgroundColor: "rgba(0,0,0,0.4)", marginBottom: 4 },
-  imagemJogo: { width: "100%", borderRadius: 10, backgroundColor: "#1a1a1a" },
-  nomeJogo:   { color: "#FFF", fontSize: 12, fontWeight: "600", textAlign: "center", marginTop: 6, marginBottom: 8, paddingHorizontal: 4 },
-  divisor:    { height: 1, backgroundColor: "rgba(255,255,255,0.12)", marginTop: 16 },
-  semJogos:   { color: "#888", textAlign: "center", marginTop: 40, fontStyle: "italic" },
+  topo: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, gap: 12 },
+  saudacao: { ...tipo.italico, color: cores.pergaminho },
+  marca: { ...tipo.display, fontSize: 24, marginTop: 2 },
+  lema: { ...tipo.suave, fontSize: 16, lineHeight: 22, paddingHorizontal: 20, marginTop: 10 },
+  secao: { marginTop: 26 },
+  quantidade: { fontFamily: fontes.corpoItalico, color: cores.textoSuave, fontSize: 14 },
+  fileira: { paddingHorizontal: 20, gap: 14, paddingBottom: 6 },
+  cardJogo: {
+    borderRadius: raios.g,
+    overflow: "hidden",
+    backgroundColor: cores.madeira800,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    justifyContent: "flex-end",
+    ...sombra,
+  },
+  semCapa: { justifyContent: "center", alignItems: "center", backgroundColor: cores.madeira700 },
+  nomeJogo: {
+    fontFamily: fontes.titulo,
+    color: cores.pergaminhoClaro,
+    fontSize: 13,
+    letterSpacing: 0.8,
+    padding: 12,
+    textShadowColor: "rgba(0,0,0,0.9)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
 });

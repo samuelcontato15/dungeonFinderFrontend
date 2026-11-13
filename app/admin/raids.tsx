@@ -4,13 +4,13 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
   Alert,
-  TextInput,
 } from "react-native";
 
+import { Botao, Cabecalho, EstadoVazio, Tela, estiloCartao } from "@/components/ui";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { cores, fontes, tipo } from "@/theme/tema";
 
 export default function Raids() {
   const { user } = useAuth();
@@ -50,81 +50,39 @@ export default function Raids() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Raids</Text>
+    <Tela>
+      <Cabecalho titulo="Raids" subtitulo="Missões abertas em todo o reino" />
 
       <FlatList
         data={raids}
         keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.lista}
+        ListEmptyComponent={
+          <EstadoVazio icone="skull-outline" texto="Nenhuma raid cadastrada" />
+        }
         renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View>
+          <View style={[estiloCartao.base, estiloCartao.linha]}>
+            <View style={{ flex: 1 }}>
               <Text style={styles.nome}>{item.nome}</Text>
-              <Text style={styles.texto}>
-                {item.descricao}
-              </Text>
+              {!!item.descricao && <Text style={tipo.suave}>{item.descricao}</Text>}
             </View>
 
-            <TouchableOpacity
-              style={styles.deletar}
+            <Botao
+              titulo="Deletar"
+              icone="trash-outline"
+              variante="perigo"
+              pequeno
               onPress={() => deletarRaid(item.id)}
-            >
-              <Text style={styles.botaoTxt}>
-                Deletar
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
         )}
       />
-    </View>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#111",
-    padding: 20,
-  },
-
-  title: {
-    color: "#D4AF37",
-    fontSize: 30,
-    fontWeight: "bold",
-    marginTop: 40,
-    marginBottom: 20,
-  },
-
-  card: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  nome: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  texto: {
-    color: "#AAA",
-    marginTop: 4,
-    width: 200,
-  },
-
-  deletar: {
-    backgroundColor: "#B00020",
-    padding: 10,
-    borderRadius: 8,
-    height: 40,
-  },
-
-  botaoTxt: {
-    color: "#FFF",
-    fontWeight: "bold",
-  },
+  lista: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 40, gap: 10 },
+  nome: { fontFamily: fontes.titulo, color: cores.pergaminho, fontSize: 15, letterSpacing: 0.6 },
 });

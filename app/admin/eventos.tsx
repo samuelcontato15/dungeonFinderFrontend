@@ -6,7 +6,6 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
-  TextInput,
   Modal,
   Platform,
   ScrollView,
@@ -15,8 +14,10 @@ import {
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from "@react-native-community/datetimepicker";
+import { Botao, BotaoIcone, Cabecalho, Campo, Cartao, EstadoVazio, Tela, estiloCartao } from "@/components/ui";
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
+import { cores, fontes, raios, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -219,163 +220,135 @@ export default function Eventos() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
-      <TouchableOpacity
-        style={styles.botaoVoltar}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#FFF" />
-      </TouchableOpacity>
+    <Tela>
+      <Cabecalho titulo="Eventos" subtitulo="Festivais e desafios do reino" />
 
-      <TouchableOpacity style={styles.botaoCriar} onPress={abrirCriacao}>
-        <Ionicons name="add-circle" size={20} color="#111" />
-        <Text style={styles.botaoCriarTexto}>Criar Evento</Text>
-      </TouchableOpacity>
+      <View style={styles.container}>
+        <Botao titulo="Criar Evento" icone="add-circle" onPress={abrirCriacao} />
 
-      <FlatList
-        data={eventos}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.vazio}>Nenhum evento cadastrado</Text>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.nome}>{item.nome}</Text>
-              <Text style={styles.descricao}>{item.descricao}</Text>
+        <FlatList
+          data={eventos}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10, paddingTop: 16, paddingBottom: insets.bottom + 30 }}
+          ListEmptyComponent={
+            <EstadoVazio icone="calendar-outline" texto="Nenhum evento cadastrado" />
+          }
+          renderItem={({ item }) => (
+            <View style={[estiloCartao.base, estiloCartao.linha]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nome}>{item.nome}</Text>
+                <Text style={tipo.suave}>{item.descricao}</Text>
+              </View>
+              <BotaoIcone icone="create-outline" tamanho={38} onPress={() => editarEvento(item)} />
+              <BotaoIcone
+                icone="trash-outline"
+                tamanho={38}
+                cor={cores.vinhoClaro}
+                style={styles.btnExcluir}
+                onPress={() => deletarEvento(item.id)}
+              />
             </View>
-            <TouchableOpacity onPress={() => editarEvento(item)}>
-              <Ionicons name="create" size={24} color="#D4AF37" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => deletarEvento(item.id)}>
-              <Ionicons name="trash" size={24} color="red" />
-            </TouchableOpacity>
-          </View>
-        )}
-      />
+          )}
+        />
+      </View>
 
       {/* ── Modal principal ── */}
       <Modal visible={modal} animationType="slide">
-        <ScrollView
-          style={styles.modal}
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
-          <TouchableOpacity
-            style={styles.botaoVoltar}
-            onPress={() => setModal(false)}
+        <Tela>
+          <Cabecalho
+            titulo={editandoId ? "Editar Evento" : "Novo Evento"}
+            aoVoltar={() => setModal(false)}
+          />
+          <ScrollView
+            contentContainerStyle={styles.modal}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
-          </TouchableOpacity>
+            <Cartao style={{ gap: 14, padding: 18 }}>
+              <Campo label="Nome" placeholder="Nome" value={nome} onChangeText={setNome} />
+              <Campo label="Descrição" placeholder="Descrição" value={descricao} onChangeText={setDescricao} />
+              <Campo label="Banner" icone="link-outline" placeholder="Banner URL" value={banner} onChangeText={setBanner} autoCapitalize="none" />
 
-          <Text style={styles.tituloModal}>
-            {editandoId ? "Editar Evento" : "Novo Evento"}
-          </Text>
+              {/* Seletor de jogo */}
+              {!editandoId && (
+                <TouchableOpacity
+                  style={styles.seletor}
+                  onPress={() => setModalJogo(true)}
+                >
+                  <Ionicons name="game-controller-outline" size={18} color={cores.ouro} />
+                  <Text style={styles.seletorTexto}>
+                    {jogoSelecionado ? jogoSelecionado.nome : "Selecionar Jogo"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color={cores.textoApagado} />
+                </TouchableOpacity>
+              )}
 
-          <TextInput
-            placeholder="Nome"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={nome}
-            onChangeText={setNome}
-          />
+              {/* Seletor de guilda */}
+              {!editandoId && (
+                <TouchableOpacity
+                  style={styles.seletor}
+                  onPress={() => setModalGuilda(true)}
+                >
+                  <Ionicons name="shield-outline" size={18} color={cores.ouro} />
+                  <Text style={styles.seletorTexto}>
+                    {guildaSelecionada
+                      ? guildaSelecionada.nome
+                      : "Selecionar Guilda"}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color={cores.textoApagado} />
+                </TouchableOpacity>
+              )}
 
-          <TextInput
-            placeholder="Descrição"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={descricao}
-            onChangeText={setDescricao}
-          />
+              {/* Início */}
+              <TouchableOpacity
+                style={styles.seletor}
+                onPress={abrirPickerInicio}
+              >
+                <Ionicons name="calendar-outline" size={18} color={cores.ouro} />
+                <Text style={styles.seletorTexto}>
+                  Início: {formatarParaExibir(dataInicio)}
+                </Text>
+              </TouchableOpacity>
 
-          <TextInput
-            placeholder="Banner URL"
-            placeholderTextColor="#777"
-            style={styles.input}
-            value={banner}
-            onChangeText={setBanner}
-          />
+              {mostrarPickerInicio && Platform.OS === "ios" && (
+                <DateTimePicker
+                  value={dataInicio}
+                  mode="datetime"
+                  display="inline"
+                  themeVariant="dark"
+                  onChange={(_, date) => {
+                    setMostrarPickerInicio(false);
+                    if (date) setDataInicio(date);
+                  }}
+                />
+              )}
 
-          {/* Seletor de jogo */}
-          {!editandoId && (
-            <TouchableOpacity
-              style={styles.seletor}
-              onPress={() => setModalJogo(true)}
-            >
-              <Ionicons
-                name="game-controller-outline"
-                size={18}
-                color="#777"
-              />
-              <Text style={styles.seletorTexto}>
-                {jogoSelecionado ? jogoSelecionado.nome : "Selecionar Jogo"}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#777" />
-            </TouchableOpacity>
-          )}
+              {/* Fim */}
+              <TouchableOpacity style={styles.seletor} onPress={abrirPickerFim}>
+                <Ionicons name="hourglass-outline" size={18} color={cores.ouro} />
+                <Text style={styles.seletorTexto}>
+                  Fim: {formatarParaExibir(dataFim)}
+                </Text>
+              </TouchableOpacity>
 
-          {/* Seletor de guilda */}
-          {!editandoId && (
-            <TouchableOpacity
-              style={styles.seletor}
-              onPress={() => setModalGuilda(true)}
-            >
-              <Ionicons name="shield-outline" size={18} color="#777" />
-              <Text style={styles.seletorTexto}>
-                {guildaSelecionada
-                  ? guildaSelecionada.nome
-                  : "Selecionar Guilda"}
-              </Text>
-              <Ionicons name="chevron-down" size={18} color="#777" />
-            </TouchableOpacity>
-          )}
+              {mostrarPickerFim && Platform.OS === "ios" && (
+                <DateTimePicker
+                  value={dataFim}
+                  mode="datetime"
+                  display="inline"
+                  themeVariant="dark"
+                  onChange={(_, date) => {
+                    setMostrarPickerFim(false);
+                    if (date) setDataFim(date);
+                  }}
+                />
+              )}
+            </Cartao>
 
-          {/* Início */}
-          <TouchableOpacity
-            style={styles.seletor}
-            onPress={abrirPickerInicio}
-          >
-            <Ionicons name="calendar-outline" size={18} color="#777" />
-            <Text style={styles.seletorTexto}>
-              Início: {formatarParaExibir(dataInicio)}
-            </Text>
-          </TouchableOpacity>
-
-          {mostrarPickerInicio && Platform.OS === "ios" && (
-            <DateTimePicker
-              value={dataInicio}
-              mode="datetime"
-              display="inline"
-              onChange={(_, date) => {
-                setMostrarPickerInicio(false);
-                if (date) setDataInicio(date);
-              }}
-            />
-          )}
-
-          {/* Fim */}
-          <TouchableOpacity style={styles.seletor} onPress={abrirPickerFim}>
-            <Ionicons name="calendar-outline" size={18} color="#777" />
-            <Text style={styles.seletorTexto}>
-              Fim: {formatarParaExibir(dataFim)}
-            </Text>
-          </TouchableOpacity>
-
-          {mostrarPickerFim && Platform.OS === "ios" && (
-            <DateTimePicker
-              value={dataFim}
-              mode="datetime"
-              display="inline"
-              onChange={(_, date) => {
-                setMostrarPickerFim(false);
-                if (date) setDataFim(date);
-              }}
-            />
-          )}
-
-          <TouchableOpacity style={styles.salvar} onPress={salvarEvento}>
-            <Text style={styles.salvarTexto}>Salvar</Text>
-          </TouchableOpacity>
-        </ScrollView>
+            <Botao titulo="Salvar" icone="save-outline" onPress={salvarEvento} />
+          </ScrollView>
+        </Tela>
       </Modal>
 
       {/* ── Modal seleção de jogo ── */}
@@ -384,9 +357,7 @@ export default function Eventos() {
           <View style={styles.sheet}>
             <View style={styles.sheetCabecalho}>
               <Text style={styles.sheetTitulo}>Selecionar Jogo</Text>
-              <TouchableOpacity onPress={() => setModalJogo(false)}>
-                <Ionicons name="close" size={24} color="#FFF" />
-              </TouchableOpacity>
+              <BotaoIcone icone="close" tamanho={34} onPress={() => setModalJogo(false)} />
             </View>
             <FlatList
               data={jogos}
@@ -404,7 +375,7 @@ export default function Eventos() {
                 >
                   <Text style={styles.sheetItemTexto}>{item.nome}</Text>
                   {jogoSelecionado?.id === item.id && (
-                    <Ionicons name="checkmark" size={20} color="#D4AF37" />
+                    <Ionicons name="checkmark" size={20} color={cores.ouro} />
                   )}
                 </TouchableOpacity>
               )}
@@ -419,9 +390,7 @@ export default function Eventos() {
           <View style={styles.sheet}>
             <View style={styles.sheetCabecalho}>
               <Text style={styles.sheetTitulo}>Selecionar Guilda</Text>
-              <TouchableOpacity onPress={() => setModalGuilda(false)}>
-                <Ionicons name="close" size={24} color="#FFF" />
-              </TouchableOpacity>
+              <BotaoIcone icone="close" tamanho={34} onPress={() => setModalGuilda(false)} />
             </View>
             <FlatList
               data={guildas}
@@ -439,7 +408,7 @@ export default function Eventos() {
                 >
                   <Text style={styles.sheetItemTexto}>{item.nome}</Text>
                   {guildaSelecionada?.id === item.id && (
-                    <Ionicons name="checkmark" size={20} color="#D4AF37" />
+                    <Ionicons name="checkmark" size={20} color={cores.ouro} />
                   )}
                 </TouchableOpacity>
               )}
@@ -447,112 +416,34 @@ export default function Eventos() {
           </View>
         </View>
       </Modal>
-    </View>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#111",
-    paddingHorizontal: 20,
-  },
-  botaoVoltar: {
-    marginBottom: 20,
-  },
-  botaoCriar: {
-    backgroundColor: "#D4AF37",
-    padding: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 20,
-  },
-  botaoCriarTexto: {
-    color: "#111",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  card: {
-    backgroundColor: "#1E1E1E",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-  },
-  nome: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  descricao: {
-    color: "#AAA",
-    marginTop: 4,
-  },
-  vazio: {
-    color: "#555",
-    textAlign: "center",
-    marginTop: 40,
-    fontSize: 15,
-  },
-  modal: {
-    flex: 1,
-    backgroundColor: "#111",
-    padding: 20,
-    paddingTop: 60,
-  },
-  tituloModal: {
-    color: "#D4AF37",
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: "#1E1E1E",
-    color: "#FFF",
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 14,
-  },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 6 },
+  nome: { fontFamily: fontes.titulo, color: cores.pergaminho, fontSize: 15, letterSpacing: 0.6 },
+  btnExcluir: { backgroundColor: "rgba(142,42,42,0.25)", borderColor: "rgba(224,98,90,0.4)" },
+  modal: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 40, gap: 18 },
   seletor: {
-    backgroundColor: "#1E1E1E",
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    backgroundColor: cores.campo,
+    borderRadius: raios.m,
+    borderWidth: 1,
+    borderColor: cores.borda,
   },
-  seletorTexto: {
-    color: "#FFF",
-    fontSize: 15,
-    flex: 1,
-  },
-  salvar: {
-    backgroundColor: "#D4AF37",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 8,
-  },
-  salvarTexto: {
-    color: "#111",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "flex-end",
-  },
+  seletorTexto: { flex: 1, fontFamily: fontes.corpo, fontSize: 17, color: cores.texto },
+  overlay: { flex: 1, backgroundColor: "rgba(5,3,2,0.8)", justifyContent: "flex-end" },
   sheet: {
-    backgroundColor: "#1A1A1A",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: cores.madeira800,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    borderTopWidth: 1,
+    borderColor: cores.bordaForte,
     maxHeight: "60%",
     paddingBottom: 30,
   },
@@ -562,29 +453,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#2A2A2A",
+    borderBottomColor: cores.linha,
   },
-  sheetTitulo: {
-    color: "#D4AF37",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
+  sheetTitulo: { ...tipo.titulo, fontSize: 17 },
   sheetItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    padding: 14,
     marginHorizontal: 16,
     marginTop: 8,
-    borderRadius: 10,
-    backgroundColor: "#222",
-  },
-  sheetItemAtivo: {
+    borderRadius: raios.m,
+    backgroundColor: cores.cartaoClaro,
     borderWidth: 1,
-    borderColor: "#D4AF37",
+    borderColor: "transparent",
   },
-  sheetItemTexto: {
-    color: "#FFF",
-    fontSize: 16,
-  },
+  sheetItemAtivo: { borderColor: cores.ouro },
+  sheetItemTexto: { ...tipo.subtitulo },
 });

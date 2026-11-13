@@ -1,17 +1,10 @@
-import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-  StatusBar,
-  Alert,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { Cabecalho, Tela } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { cores, raios, tipo } from "@/theme/tema";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React from "react";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const ITENS = [
   { id: "1", icone: "help-circle-outline", rotulo: "Ajuda" },
@@ -20,7 +13,6 @@ const ITENS = [
 ] as const;
 
 export default function Config() {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { signOut } = useAuth();
 
@@ -39,85 +31,76 @@ export default function Config() {
   }
 
   function handleItem(item: typeof ITENS[number]) {
-    if (item.logout) {
+    if ("logout" in item && item.logout) {
       handleLogout();
       return;
     }
   }
 
   return (
-    <ImageBackground
-      source={require("../assets/fundo1.png")}
-      style={estilos.fundo}
-      resizeMode="cover"
-    >
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
+    <Tela>
+      <Cabecalho titulo="Configurações" />
 
-      <View style={[estilos.container, { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 20 }]}>
-        {/* Botão voltar */}
-        <TouchableOpacity style={estilos.btnVoltar} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color="#D4AF37" />
-        </TouchableOpacity>
-
-        <Text style={estilos.titulo}>Configurações</Text>
-
-        <View style={estilos.lista}>
-          {ITENS.map((item) => (
+      <View style={estilos.lista}>
+        {ITENS.map((item, i) => {
+          const sair = "logout" in item && item.logout;
+          return (
             <TouchableOpacity
               key={item.id}
-              style={estilos.item}
+              style={[estilos.item, i > 0 && estilos.itemBorda]}
               onPress={() => handleItem(item)}
               activeOpacity={0.7}
             >
-              <Ionicons
-                name={item.icone}
-                size={32}
-                color="#fff"
-              />
-              <Text style={estilos.itemTexto}>{item.rotulo}</Text>
+              <View style={[estilos.icone, sair && estilos.iconeSair]}>
+                <Ionicons
+                  name={item.icone}
+                  size={22}
+                  color={sair ? cores.vinhoClaro : cores.ouro}
+                />
+              </View>
+              <Text style={[estilos.itemTexto, sair && { color: cores.vinhoClaro }]}>
+                {item.rotulo}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={cores.textoApagado} />
             </TouchableOpacity>
-          ))}
-        </View>
+          );
+        })}
       </View>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: { flex: 1 },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 28,
-  },
-  btnVoltar: {
-    alignSelf: "flex-start",
-    marginBottom: 8,
-  },
-  titulo: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: "#E8D5A3",
-    letterSpacing: 2,
-    marginBottom: 48,
-    marginTop: 4,
-  },
   lista: {
-    gap: 36,
+    marginHorizontal: 20,
+    marginTop: 10,
+    backgroundColor: cores.cartao,
+    borderRadius: raios.g,
+    borderWidth: 1,
+    borderColor: cores.borda,
+    overflow: "hidden",
   },
   item: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 20,
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  itemTexto: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "500",
-    letterSpacing: 1,
+  itemBorda: { borderTopWidth: 1, borderTopColor: cores.linha },
+  icone: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "rgba(212,175,55,0.1)",
+    borderWidth: 1,
+    borderColor: cores.borda,
+    justifyContent: "center",
+    alignItems: "center",
   },
+  iconeSair: {
+    backgroundColor: "rgba(142,42,42,0.2)",
+    borderColor: "rgba(224,98,90,0.35)",
+  },
+  itemTexto: { ...tipo.subtitulo, fontSize: 19, flex: 1 },
 });

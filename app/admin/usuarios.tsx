@@ -5,12 +5,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from "react-native";
 
+import { Avatar, Botao, Cabecalho, Campo, Cartao, Selo, Tela, TituloSecao, estiloCartao } from "@/components/ui";
 import api from "@/services/api";
+import { cores, fontes, tipo } from "@/theme/tema";
 
 export default function Usuarios() {
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -94,174 +94,126 @@ export default function Usuarios() {
   }, []);
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Usuários</Text>
+    <Tela>
+      <Cabecalho titulo="Usuários" subtitulo="Os heróis registrados" />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nick"
-        placeholderTextColor="#999"
-        value={nick}
-        onChangeText={setNick}
-      />
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Cartao style={styles.form} destaque={!!usuarioSelecionado}>
+          {usuarioSelecionado && (
+            <Selo texto={`Editando ${usuarioSelecionado.nick}`} icone="create" tom="ambar" />
+          )}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#999"
-        value={email}
-        onChangeText={setEmail}
-      />
+          <Campo
+            label="Nick"
+            icone="person-outline"
+            placeholder="Nick"
+            value={nick}
+            onChangeText={setNick}
+            autoCapitalize="none"
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder={
-          usuarioSelecionado
-            ? "Nova senha (deixe em branco para não alterar)"
-            : "Senha"
-        }
-        placeholderTextColor="#999"
-        secureTextEntry
-        value={senhaHash}
-        onChangeText={setSenhaHash}
-      />
+          <Campo
+            label="Email"
+            icone="mail-outline"
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Bio"
-        placeholderTextColor="#999"
-        value={bio}
-        onChangeText={setBio}
-      />
+          <Campo
+            label="Senha"
+            icone="lock-closed-outline"
+            placeholder={
+              usuarioSelecionado
+                ? "Nova senha (deixe em branco para não alterar)"
+                : "Senha"
+            }
+            secureTextEntry
+            value={senhaHash}
+            onChangeText={setSenhaHash}
+          />
 
-      {usuarioSelecionado ? (
-        <TouchableOpacity
-          style={styles.editar}
-          onPress={() => editarUsuario(usuarioSelecionado.id)}
-        >
-          <Text style={styles.botaoTxt}>Salvar edição</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.criar} onPress={criarUsuario}>
-          <Text style={styles.botaoTxt}>Criar usuário</Text>
-        </TouchableOpacity>
-      )}
+          <Campo
+            label="Bio"
+            placeholder="Bio"
+            value={bio}
+            onChangeText={setBio}
+          />
 
-      <FlatList
-        scrollEnabled={false}
-        data={usuarios}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.nome}>{item.nick}</Text>
+          {usuarioSelecionado ? (
+            <Botao
+              titulo="Salvar edição"
+              icone="save-outline"
+              onPress={() => editarUsuario(usuarioSelecionado.id)}
+            />
+          ) : (
+            <Botao
+              titulo="Criar usuário"
+              icone="person-add-outline"
+              variante="sucesso"
+              onPress={criarUsuario}
+            />
+          )}
+        </Cartao>
 
-              <Text style={styles.texto}>{item.email}</Text>
+        <TituloSecao titulo="Usuários cadastrados" style={{ marginTop: 8, marginBottom: 0 }} />
 
-              <Text style={styles.bio}>{item.bio || "Sem bio"}</Text>
+        <FlatList
+          scrollEnabled={false}
+          data={usuarios}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ gap: 10 }}
+          renderItem={({ item }) => (
+            <View style={[estiloCartao.base, estiloCartao.linha]}>
+              <Avatar uri={item.fotoPerfil} tamanho={48} />
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.nome} numberOfLines={1}>{item.nick}</Text>
+
+                <Text style={tipo.suave} numberOfLines={1}>{item.email}</Text>
+
+                <Text style={tipo.italico} numberOfLines={2}>{item.bio || "Sem bio"}</Text>
+              </View>
+
+              <View style={{ gap: 8 }}>
+                <Botao
+                  titulo="Editar"
+                  variante="secundario"
+                  pequeno
+                  onPress={async () => {
+                    const response = await api.get(`/usuarios/${item.id}`);
+                    const usuario = response.data;
+                    setUsuarioSelecionado(usuario);
+                    setNick(usuario.nick || "");
+                    setEmail(usuario.email || "");
+                    setSenhaHash("");
+                    setBio(usuario.bio || "");
+                  }}
+                />
+
+                <Botao
+                  titulo="Deletar"
+                  variante="perigo"
+                  pequeno
+                  onPress={() => deletarUsuario(item.id)}
+                />
+              </View>
             </View>
-
-            <View style={{ gap: 10 }}>
-              <TouchableOpacity
-                style={styles.editar}
-                onPress={async () => {
-                  const response = await api.get(`/usuarios/${item.id}`);
-                  const usuario = response.data;
-                  setUsuarioSelecionado(usuario);
-                  setNick(usuario.nick || "");
-                  setEmail(usuario.email || "");
-                  setSenhaHash("");
-                  setBio(usuario.bio || "");
-                }}
-              >
-                <Text style={styles.botaoTxt}>Editar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.deletar}
-                onPress={() => deletarUsuario(item.id)}
-              >
-                <Text style={styles.botaoTxt}>Deletar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      />
-    </ScrollView>
+          )}
+        />
+      </ScrollView>
+    </Tela>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#111",
-    padding: 20,
-  },
-
-  title: {
-    color: "#D4AF37",
-    fontSize: 30,
-    fontWeight: "bold",
-    marginTop: 40,
-    marginBottom: 20,
-  },
-
-  input: {
-    backgroundColor: "#1E1E1E",
-    color: "#FFF",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 12,
-  },
-
-  criar: {
-    backgroundColor: "#2E7D32",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
-  editar: {
-    backgroundColor: "#1565C0",
-    padding: 10,
-    borderRadius: 8,
-  },
-
-  deletar: {
-    backgroundColor: "#B00020",
-    padding: 10,
-    borderRadius: 8,
-  },
-
-  botaoTxt: {
-    color: "#FFF",
-    fontWeight: "bold",
-  },
-
-  card: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-
-  nome: {
-    color: "#FFF",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  texto: {
-    color: "#AAA",
-    marginTop: 4,
-  },
-
-  bio: {
-    color: "#CCC",
-    marginTop: 6,
-    width: 180,
-  },
+  container: { paddingHorizontal: 20, paddingTop: 6, paddingBottom: 40, gap: 16 },
+  form: { gap: 14, padding: 18 },
+  nome: { fontFamily: fontes.titulo, color: cores.pergaminho, fontSize: 15, letterSpacing: 0.6 },
 });

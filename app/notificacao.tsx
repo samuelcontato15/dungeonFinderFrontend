@@ -1,16 +1,13 @@
 import BarraNavegacao from "@/components/BarraNavegacao";
+import { Avatar, BotaoIcone, Cabecalho, Carregando, EstadoVazio, Tela, estiloCartao } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
-import { Ionicons } from "@expo/vector-icons";
+import { cores, fontes, tipo } from "@/theme/tema";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
-  Image,
-  ImageBackground,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -260,57 +257,24 @@ export default function Notificacoes() {
 
   if (carregando) {
     return (
-      <ImageBackground
-        source={require("../assets/fundo1.png")}
-        style={estilos.fundo}
-      >
-        <View style={estilos.overlay} />
-        <View
-          style={[
-            estilos.header,
-            {
-              paddingTop: insets.top + 10,
-            },
-          ]}
-        >
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
-          </TouchableOpacity>
-          <Text style={estilos.headerTitulo}>NOTIFICAÇÕES</Text>
-          <View style={{ width: 24 }} />
-        </View>
-
-        <View style={estilos.centralizar}>
-          <ActivityIndicator size="large" color="#D4AF37" />
-        </View>
-      </ImageBackground>
+      <Tela>
+        <Cabecalho titulo="Notificações" />
+        <Carregando />
+      </Tela>
     );
   }
 
   return (
-    <ImageBackground
-      source={require("../assets/fundo1.png")}
-      style={estilos.fundo}
-    >
-      <View style={estilos.overlay} />
-      <StatusBar barStyle="light-content" />
+    <Tela>
+      <Cabecalho
+        titulo="Notificações"
+        subtitulo="Recados deixados no mural da taverna"
+      />
 
-      <View
-        style={[
-          estilos.header,
-          {
-            paddingTop: insets.top + 10,
-          },
-        ]}
+      <ScrollView
+        contentContainerStyle={estilos.container}
+        showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#E8D5A3" />
-        </TouchableOpacity>
-        <Text style={estilos.headerTitulo}>NOTIFICAÇÕES</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={estilos.container}>
         {notificacoes.length > 0 ? (
           notificacoes.map((item) => {
             const isSolicitacao = item.tipo === "SOLICITACAO_AMIZADE";
@@ -361,177 +325,108 @@ export default function Notificacoes() {
               iconeFallback = "construct";
             }
 
+            const apagada =
+              item.lida &&
+              !isSolicitacao &&
+              !isConviteGuilda &&
+              !isPedidoGuilda;
+
             return (
               <TouchableOpacity
                 key={item.id}
                 activeOpacity={0.85}
                 onPress={() => abrirNotificacao(item)}
                 style={[
-                  estilos.cardNotificacao,
-                  item.lida &&
-                    !isSolicitacao &&
-                    !isConviteGuilda &&
-                    !isPedidoGuilda &&
-                    estilos.cardLida,
+                  estiloCartao.base,
+                  estiloCartao.linha,
+                  !item.lida && estilos.cardNova,
+                  apagada && estilos.cardLida,
                 ]}
               >
-                <View style={estilos.infoUsuario}>
-                  <View style={estilos.avatar}>
-                    {fotoAvatar ? (
-                      <Image
-                        source={{
-                          uri: fotoAvatar,
-                        }}
-                        style={estilos.imgAvatar}
-                      />
-                    ) : (
-                      <Ionicons
-                        name={iconeFallback as any}
-                        size={24}
-                        color="#FFF"
-                      />
-                    )}
-                  </View>
+                <Avatar uri={fotoAvatar} tamanho={50} icone={iconeFallback as any} />
 
-                  <View style={{ flex: 1 }}>
+                <View style={{ flex: 1 }}>
+                  <View style={estilos.linhaTitulo}>
                     <Text style={estilos.nick} numberOfLines={1}>
                       {titulo}
                     </Text>
-                    <Text style={estilos.subtitulo}>{subTitulo}</Text>
+                    {!item.lida && <View style={estilos.pontoNovo} />}
                   </View>
+                  <Text style={tipo.suave}>{subTitulo}</Text>
                 </View>
 
                 {isSolicitacao && (
                   <View style={estilos.acoes}>
-                    <TouchableOpacity
+                    <BotaoIcone
+                      icone="checkmark"
+                      cor={cores.musgoClaro}
+                      tamanho={38}
                       style={estilos.btnAceitar}
                       onPress={() =>
                         aceitarAmizade(item.id, item.referenciaId)
                       }
-                    >
-                      <Ionicons name="checkmark" size={20} color="#000" />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
+                    />
+                    <BotaoIcone
+                      icone="close"
+                      cor={cores.vinhoClaro}
+                      tamanho={38}
                       style={estilos.btnRecusar}
                       onPress={() =>
                         recusarAmizade(item.id, item.referenciaId)
                       }
-                    >
-                      <Ionicons name="close" size={20} color="#FFF" />
-                    </TouchableOpacity>
+                    />
                   </View>
                 )}
               </TouchableOpacity>
             );
           })
         ) : (
-          <Text style={estilos.msgVazia}>Nenhuma notificação nova.</Text>
+          <EstadoVazio
+            icone="notifications-off-outline"
+            texto="Nenhuma notificação nova."
+            dica="Quando algo acontecer no reino, o aviso aparece aqui."
+          />
         )}
       </ScrollView>
 
       <View style={estilos.footer}>
         <BarraNavegacao />
       </View>
-    </ImageBackground>
+    </Tela>
   );
 }
 
 const estilos = StyleSheet.create({
-  fundo: {
-    flex: 1,
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.55)",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    marginBottom: 20,
-  },
-  headerTitulo: {
-    color: "#E8D5A3",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
   container: {
     paddingHorizontal: 20,
-    paddingBottom: 120,
-  },
-  centralizar: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cardNotificacao: {
-    flexDirection: "row",
-    backgroundColor: "#1A1A1A",
-    borderRadius: 12,
-    padding: 15,
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#333",
+    paddingTop: 6,
+    paddingBottom: 130,
     gap: 10,
   },
-  cardLida: {
-    opacity: 0.6,
-  },
-  infoUsuario: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#444",
-    justifyContent: "center",
-    alignItems: "center",
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E8D5A3",
-  },
-  imgAvatar: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
+  cardNova: { borderColor: cores.bordaForte },
+  cardLida: { opacity: 0.55 },
+  linhaTitulo: { flexDirection: "row", alignItems: "center", gap: 8 },
   nick: {
-    color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 16,
+    fontFamily: fontes.titulo,
+    color: cores.pergaminho,
+    fontSize: 14,
+    letterSpacing: 0.6,
+    flexShrink: 1,
   },
-  subtitulo: {
-    color: "#999",
-    fontSize: 12,
-    marginTop: 2,
+  pontoNovo: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: cores.ouro,
   },
-  acoes: {
-    flexDirection: "row",
-    gap: 10,
-  },
+  acoes: { flexDirection: "row", gap: 8 },
   btnAceitar: {
-    backgroundColor: "#E8D5A3",
-    padding: 8,
-    borderRadius: 20,
+    backgroundColor: "rgba(78,122,58,0.3)",
+    borderColor: "rgba(143,203,107,0.5)",
   },
   btnRecusar: {
-    backgroundColor: "#444",
-    padding: 8,
-    borderRadius: 20,
-  },
-  msgVazia: {
-    color: "#666",
-    textAlign: "center",
-    marginTop: 50,
-    fontStyle: "italic",
+    backgroundColor: "rgba(142,42,42,0.3)",
+    borderColor: "rgba(224,98,90,0.5)",
   },
   footer: {
     position: "absolute",
