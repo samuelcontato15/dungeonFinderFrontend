@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/services/api";
 import { cores, fontes, gradientes, raios, tipo } from "@/theme/tema";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
